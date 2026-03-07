@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -9,7 +10,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses = {
-  primary: 'bg-violet-600 hover:bg-violet-700 text-white shadow-sm',
+  primary: 'bg-gray-900 hover:bg-black text-white shadow-sm',
   secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-800',
   ghost: 'hover:bg-gray-100 text-gray-700',
   danger: 'bg-red-500 hover:bg-red-600 text-white',
@@ -59,60 +60,67 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   hint?: string;
 }
 
-export function Input({ label, error, hint, className, id, ...props }: InputProps) {
-  const inputId = id || label?.toLowerCase().replace(/\s/g, '-');
-  return (
-    <div className="flex flex-col gap-1">
-      {label && (
-        <label htmlFor={inputId} className="text-sm font-medium text-gray-700">
-          {label}
-        </label>
-      )}
-      <input
-        id={inputId}
-        className={cn(
-          'w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition-colors duration-200',
-          'focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent',
-          error && 'border-red-400 focus:ring-red-400',
-          className
+export const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ label, error, hint, className, id, ...props }, ref) => {
+    const inputId = id || label?.toLowerCase().replace(/\s/g, '-');
+    return (
+      <div className="flex flex-col gap-1">
+        {label && (
+          <label htmlFor={inputId} className="text-sm font-medium text-gray-700">
+            {label}
+          </label>
         )}
-        {...props}
-      />
-      {hint && !error && <p className="text-xs text-gray-500">{hint}</p>}
-      {error && <p className="text-xs text-red-500">{error}</p>}
-    </div>
-  );
-}
+        <input
+          ref={ref}
+          id={inputId}
+          className={cn(
+            'w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition-colors duration-200',
+            'focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent',
+            error && 'border-red-400 focus:ring-red-400',            className
+          )}
+          {...props}
+        />
+        {hint && !error && <p className="text-xs text-gray-500">{hint}</p>}
+        {error && <p className="text-xs text-red-500">{error}</p>}
+      </div>
+    );
+  }
+);
+Input.displayName = 'Input';
 
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
 }
 
-export function Textarea({ label, error, className, id, ...props }: TextareaProps) {
-  const inputId = id || label?.toLowerCase().replace(/\s/g, '-');
-  return (
-    <div className="flex flex-col gap-1">
-      {label && (
-        <label htmlFor={inputId} className="text-sm font-medium text-gray-700">
-          {label}
-        </label>
-      )}
-      <textarea
-        id={inputId}
-        rows={3}
-        className={cn(
-          'w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition-colors',
-          'focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none',
-          error && 'border-red-400 focus:ring-red-400',
-          className
+export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+  ({ label, error, className, id, ...props }, ref) => {
+    const inputId = id || label?.toLowerCase().replace(/\s/g, '-');
+    return (
+      <div className="flex flex-col gap-1">
+        {label && (
+          <label htmlFor={inputId} className="text-sm font-medium text-gray-700">
+            {label}
+          </label>
         )}
-        {...props}
-      />
-      {error && <p className="text-xs text-red-500">{error}</p>}
-    </div>
-  );
-}
+        <textarea
+          ref={ref}
+          id={inputId}
+          rows={3}
+          className={cn(
+            'w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition-colors',
+            'focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none',
+            error && 'border-red-400 focus:ring-red-400',
+            className
+          )}
+          {...props}
+        />
+        {error && <p className="text-xs text-red-500">{error}</p>}
+      </div>
+    );
+  }
+);
+Textarea.displayName = 'Textarea';
 
 interface CardProps {
   children: React.ReactNode;
@@ -165,21 +173,45 @@ interface ModalProps {
 export function Modal({ open, onClose, title, children, className }: ModalProps) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className={cn('relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto', className)}>
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
+      {/* Backdrop */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" 
+        onClick={onClose} 
+      />
+
+      {/* Modal / Drawer Content */}
+      <motion.div 
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        className={cn(
+          'relative bg-white w-full h-[92vh] sm:h-auto sm:max-w-md rounded-t-[2.5rem] sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-gray-100',
+          className
+        )}
+      >
+        {/* Handle bar for mobile drawer look */}
+        <div className="sm:hidden w-12 h-1.5 bg-gray-200 rounded-full mx-auto mt-3 mb-1" />
+
         {title && (
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-            <h2 className="text-base font-semibold text-gray-900">{title}</h2>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-50">
+            <h2 className="text-lg font-bold text-gray-900 tracking-tight">{title}</h2>
+            <button onClick={onClose} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-900 transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
         )}
-        <div className="p-5">{children}</div>
-      </div>
+
+        <div className="flex-1 overflow-y-auto p-6 pb-10 sm:pb-6 custom-scrollbar">
+          {children}
+        </div>
+      </motion.div>
     </div>
   );
 }

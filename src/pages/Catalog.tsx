@@ -24,10 +24,14 @@ export default function Catalog() {
   useEffect(() => {
     if (!slug) return;
 
-    const fetchStore = async () => {
+    const fetchStoreAndProducts = async () => {
+      // Combined query: fetch store with its products in one go
       const { data: storeData, error } = await supabase
         .from('stores')
-        .select('*')
+        .select(`
+          *,
+          products (*)
+        `)
         .eq('slug', slug)
         .eq('is_active', true)
         .single();
@@ -39,32 +43,26 @@ export default function Catalog() {
       }
 
       setStore(storeData as Store);
+      
+      // Data is already there from the join
+      if (storeData.products) {
+        const sortedProducts = (storeData.products as Product[]).filter(p => p.is_available).sort((a, b) => a.sort_order - b.sort_order);
+        setProducts(sortedProducts);
+        const cats = ['Semua', ...new Set(sortedProducts.map((p) => p.category))];
+        setCategories(cats);
+      }
 
-      // Track page view
+      // Async: track page view without blocking
       supabase.from('analytics_events').insert({
         store_id: storeData.id,
         event_type: 'page_view',
         referrer: document.referrer || null,
       });
 
-      // Fetch products
-      const { data: productsData } = await supabase
-        .from('products')
-        .select('*')
-        .eq('store_id', storeData.id)
-        .eq('is_available', true)
-        .order('sort_order');
-
-      if (productsData) {
-        setProducts(productsData);
-        const cats = ['Semua', ...new Set(productsData.map((p) => p.category))];
-        setCategories(cats);
-      }
-
       setLoading(false);
     };
 
-    fetchStore();
+    fetchStoreAndProducts();
   }, [slug]);
 
   const filteredProducts =

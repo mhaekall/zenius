@@ -1,34 +1,38 @@
-import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { useEffect, lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation, useOutlet } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from './lib/supabase';
 import { useAuthStore } from './store/authStore';
+import { DashboardLayout } from './components/layout/DashboardLayout';
 
-// Pages
+// Eagerly loaded public pages (Keep small)
 import Landing from './pages/Landing';
-import Login from './pages/Login';
-import Register from './pages/Register';
 import Catalog from './pages/Catalog';
-import Overview from './pages/dashboard/Overview';
-import Products from './pages/dashboard/Products';
-import Settings from './pages/dashboard/Settings';
-import QRCodePage from './pages/dashboard/QRCode';
-import Analytics from './pages/dashboard/Analytics';
+
+// Lazy loaded pages (Code Splitting)
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const Overview = lazy(() => import('./pages/dashboard/Overview'));
+const Products = lazy(() => import('./pages/dashboard/Products'));
+const Settings = lazy(() => import('./pages/dashboard/Settings'));
+const QRCodePage = lazy(() => import('./pages/dashboard/QRCode'));
+
+// Performance-friendly Loading Spinner
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-50/50 backdrop-blur-sm">
+    <div className="text-center">
+      <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl animate-pulse mx-auto mb-3" />
+      <p className="text-xs text-gray-400 font-medium">Memuat...</p>
+    </div>
+  </div>
+);
 
 // Auth guard component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuthStore();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl animate-pulse mx-auto mb-3" />
-          <p className="text-sm text-gray-400">Memuat...</p>
-        </div>
-      </div>
-    );
-  }
-
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
@@ -40,6 +44,32 @@ function GuestRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Persistent Layout Wrapper with Stabilized Transitions
+function DashboardWrapper() {
+  const location = useLocation();
+  const outlet = useOutlet();
+  
+  return (
+    <DashboardLayout activeHref={location.pathname}>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={location.pathname}
+          initial={{ opacity: 0, x: 8 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -8 }}
+          transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }} // Snappy Apple-style easing
+          className="w-full"
+        >
+          {/* Ensure the lazy Suspense is inside the animated div */}
+          <Suspense fallback={<div className="flex items-center justify-center min-h-[50vh]"><div className="w-6 h-6 border-2 border-gray-200 border-t-black rounded-full animate-spin" /></div>}>
+            {outlet}
+          </Suspense>
+        </motion.div>
+      </AnimatePresence>
+    </DashboardLayout>
+  );
+}
+
 // Auth initializer
 function AuthInit({ children }: { children: React.ReactNode }) {
   const { setUser, setLoading, fetchStore } = useAuthStore();
@@ -49,7 +79,7 @@ function AuthInit({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
-        fetchStore(session.user.id).then(() => setLoading(false));
+        fetchStore(session.user.id).finally(() => setLoading(false));
       } else {
         setLoading(false);
       }
@@ -66,7 +96,7 @@ function AuthInit({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [setUser, setLoading, fetchStore]);
 
   return <>{children}</>;
 }
@@ -74,22 +104,34 @@ function AuthInit({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <Toaster 
+        position="top-center" 
+        toastOptions={{ 
+          duration: 3000, 
+          style: { borderRadius: '16px', background: '#333', color: '#fff' } 
+        }} 
+      />
       <AuthInit>
         <Routes>
-          {/* Public */}
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
-          <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+          {/* Public Pages - Normal Suspense */}
+          <Route element={<Suspense fallback={<PageLoader />}><Outlet /></Suspense>}>
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
+            <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+            <Route path="/c/:slug" element={<Catalog />} />
+          </Route>
 
-          {/* Public Catalog */}
-          <Route path="/c/:slug" element={<Catalog />} />
-
-          {/* Dashboard (Protected) */}
-          <Route path="/dashboard" element={<ProtectedRoute><Overview /></ProtectedRoute>} />
-          <Route path="/dashboard/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
-          <Route path="/dashboard/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-          <Route path="/dashboard/qrcode" element={<ProtectedRoute><QRCodePage /></ProtectedRoute>} />
-          <Route path="/dashboard/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+          {/* Dashboard - Persistent Layout */}
+          <Route 
+            path="/dashboard" 
+            element={<ProtectedRoute><DashboardWrapper /></ProtectedRoute>}
+          >
+            {/* The actual routes handled by the Outlet in DashboardWrapper */}
+            <Route index element={<Overview />} />
+            <Route path="products" element={<Products />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="qrcode" element={<QRCodePage />} />
+          </Route>
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

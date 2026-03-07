@@ -1,27 +1,16 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard,
   Package,
-  Settings,
   QrCode,
-  BarChart2,
-  LogOut,
-  Menu,
-  X,
+  User,
+  ExternalLink,
   Store,
+  Plus,
 } from 'lucide-react';
-import { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { cn } from '../../lib/utils';
-
-const navItems = [
-  { icon: LayoutDashboard, label: 'Beranda', href: '/dashboard' },
-  { icon: Package, label: 'Produk', href: '/dashboard/products' },
-  { icon: QrCode, label: 'QR Code', href: '/dashboard/qrcode' },
-  { icon: BarChart2, label: 'Analitik', href: '/dashboard/analytics' },
-  { icon: Settings, label: 'Pengaturan', href: '/dashboard/settings' },
-];
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -29,124 +18,110 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children, activeHref }: DashboardLayoutProps) {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const { store, signOut } = useAuthStore();
-  const navigate = useNavigate();
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/login');
-  };
+  const { store } = useAuthStore();
+  const navItems = [
+    { icon: LayoutDashboard, label: 'Beranda', href: '/dashboard' },
+    { icon: Package, label: 'Produk', href: '/dashboard/products' },
+    { icon: QrCode, label: 'QR Code', href: '/dashboard/qrcode' },
+    { icon: User, label: 'Profil', href: '/dashboard/settings' },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar Desktop */}
-      <aside className="hidden lg:flex flex-col w-60 bg-white border-r border-gray-100 fixed h-screen z-10">
-        {/* Logo */}
-        <div className="flex items-center gap-2.5 px-5 py-5 border-b border-gray-100">
-          <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
-            <Store className="w-4 h-4 text-white" />
-          </div>
-          <span className="font-bold text-gray-900 text-base">Zenius</span>
-        </div>
+    <div className="min-h-screen bg-[#fcfcfc] relative pb-24">
+      {/* Main Content Area */}
+      <main className="p-4 md:p-6 lg:max-w-2xl lg:mx-auto pt-6">
+        {children}
+      </main>
 
-        {/* Store info */}
-        {store && (
-          <div className="mx-3 mt-4 px-3 py-2.5 bg-violet-50 rounded-xl">
-            <p className="text-xs text-violet-500 font-medium">Toko Aktif</p>
-            <p className="text-sm font-semibold text-gray-900 truncate">{store.name}</p>
-            <p className="text-xs text-gray-500">/{store.slug}</p>
-          </div>
+      {/* Persistent Floating Action Buttons (Outside transition area) */}
+      <div className="fixed bottom-20 right-6 z-40">
+        {/* FAB for Dashboard Home: View Store */}
+        {activeHref === '/dashboard' && store && (
+          <a href={`${window.location.origin}/c/${store.slug}`} target="_blank" rel="noopener noreferrer">
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.9 }}
+              className="w-12 h-12 bg-black text-white rounded-2xl shadow-xl shadow-black/20 flex items-center justify-center border border-white/10"
+            >
+              <Store className="w-5 h-5" />
+            </motion.div>
+          </a>
         )}
 
-        {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              to={item.href}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
-                activeHref === item.href
-                  ? 'bg-violet-600 text-white shadow-sm'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              )}
-            >
-              <item.icon className="w-4 h-4" />
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Sign out */}
-        <div className="p-3 border-t border-gray-100">
-          <button
-            onClick={handleSignOut}
-            className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm font-medium text-gray-500 hover:bg-red-50 hover:text-red-500 transition-all duration-200"
+        {/* FAB for Products Page: Add Product */}
+        {activeHref === '/dashboard/products' && (
+          <motion.button
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            onClick={() => {
+              // We use search params to trigger the modal in the Products page
+              const url = new URL(window.location.href);
+              url.searchParams.set('add', 'true');
+              window.history.replaceState(null, '', url);
+              // Trigger a re-render by navigating
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.9 }}
+            className="w-12 h-12 bg-black text-white rounded-2xl shadow-xl shadow-black/20 flex items-center justify-center border border-white/10"
           >
-            <LogOut className="w-4 h-4" />
-            Keluar
-          </button>
-        </div>
-      </aside>
+            <Plus className="w-6 h-6" />
+          </motion.button>
+        )}
+      </div>
 
-      {/* Mobile Sidebar */}
-      {mobileOpen && (
-        <motion.div
-          initial={{ x: -280 }}
-          animate={{ x: 0 }}
-          exit={{ x: -280 }}
-          className="lg:hidden fixed inset-0 z-40 flex"
+      {/* Ramping & Padat Light Mode Bottom Navigation */}
+      <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 w-full max-w-[340px] px-4 sm:px-0">
+        <motion.nav 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="flex items-center justify-between px-1.5 py-1 rounded-[1.75rem] bg-white/95 backdrop-blur-xl border border-gray-200/60 shadow-[0_10px_30px_rgb(0,0,0,0.06)]"
         >
-          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
-          <div className="relative w-64 bg-white h-full flex flex-col shadow-xl">
-            <div className="flex items-center justify-between px-5 py-5 border-b border-gray-100">
-              <span className="font-bold text-gray-900">Zenius</span>
-              <button onClick={() => setMobileOpen(false)}>
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-            <nav className="flex-1 px-3 py-4 space-y-1">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  onClick={() => setMobileOpen(false)}
-                  className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
-                    activeHref === item.href
-                      ? 'bg-violet-600 text-white'
-                      : 'text-gray-600 hover:bg-gray-50'
-                  )}
+          {navItems.map((item) => {
+            const isActive = activeHref === item.href || 
+                            (item.href === '/dashboard' && activeHref === '/dashboard/analytics');
+            
+            return (
+              <Link key={item.href} to={item.href} className="relative flex-1 group">
+                <motion.div
+                  whileTap={{ scale: 0.94 }}
+                  className="flex flex-col items-center justify-center py-1.5 w-full h-full relative"
                 >
-                  <item.icon className="w-4 h-4" />
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-            <div className="p-3 border-t border-gray-100">
-              <button
-                onClick={handleSignOut}
-                className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm font-medium text-gray-500 hover:text-red-500 transition-all"
-              >
-                <LogOut className="w-4 h-4" />
-                Keluar
-              </button>
-            </div>
-          </div>
-        </motion.div>
-      )}
+                  {/* Subtle Indicator for Active Tab */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="active-nav-pill-light"
+                      className="absolute inset-0 bg-gray-100 rounded-2xl -z-10"
+                      initial={false}
+                      transition={{ type: 'spring', bounce: 0.1, duration: 0.4 }}
+                    />
+                  )}
 
-      {/* Main Content */}
-      <div className="flex-1 lg:ml-60">
-        {/* Mobile Header */}
-        <div className="lg:hidden sticky top-0 z-30 bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3">
-          <button onClick={() => setMobileOpen(true)}>
-            <Menu className="w-5 h-5 text-gray-600" />
-          </button>
-          <span className="font-bold text-gray-900">Zenius</span>
-        </div>
-        <main className="p-4 md:p-6 lg:p-8">{children}</main>
+                  <div className="relative z-10 flex flex-col items-center">
+                    <item.icon 
+                      className={cn(
+                        "w-[22px] h-[22px] mb-0.5 transition-colors duration-300", 
+                        isActive ? "text-black" : "text-gray-400 group-hover:text-gray-600"
+                      )} 
+                      strokeWidth={isActive ? 2.5 : 2}
+                    />
+                    
+                    <span 
+                      className={cn(
+                        "text-[11px] font-bold tracking-tight transition-colors duration-300",
+                        isActive ? "text-black" : "text-gray-400 group-hover:text-gray-600"
+                      )}
+                    >
+                      {item.label}
+                    </span>
+                  </div>
+                </motion.div>
+              </Link>
+            );
+          })}
+        </motion.nav>
       </div>
     </div>
   );

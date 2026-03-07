@@ -2,10 +2,12 @@ import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Camera, Save } from 'lucide-react';
+import { Camera, Save, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import imageCompression from 'browser-image-compression';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
-import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Button, Input, Textarea, Card } from '../../components/ui';
 import { sanitizeSlug } from '../../lib/utils';
 import type { Store } from '../../types';
@@ -20,8 +22,8 @@ const settingsSchema = z.object({
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
 export default function Settings() {
-  const { store, setStore } = useAuthStore();
-  const [success, setSuccess] = useState(false);
+  const { user, store, setStore, signOut } = useAuthStore();
+  const navigate = useNavigate();
   const [logoPreview, setLogoPreview] = useState<string | null>(store?.logo_url || null);
   const [qrisPreview, setQrisPreview] = useState<string | null>(store?.qris_url || null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -48,24 +50,43 @@ export default function Settings() {
 
   const storeName = watch('name');
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setLogoFile(file);
-      setLogoPreview(URL.createObjectURL(file));
+      const toastId = toast.loading('Mengompres logo...');
+      try {
+        const compressed = await imageCompression(file, { maxSizeMB: 0.2, maxWidthOrHeight: 512 });
+        setLogoFile(compressed);
+        setLogoPreview(URL.createObjectURL(compressed));
+        toast.success('Logo siap!', { id: toastId });
+      } catch (error) {
+        toast.error('Gagal memproses logo', { id: toastId });
+      }
     }
   };
 
-  const handleQrisChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleQrisChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setQrisFile(file);
-      setQrisPreview(URL.createObjectURL(file));
+      const toastId = toast.loading('Mengompres QRIS...');
+      try {
+        const compressed = await imageCompression(file, { maxSizeMB: 0.3, maxWidthOrHeight: 800 });
+        setQrisFile(compressed);
+        setQrisPreview(URL.createObjectURL(compressed));
+        toast.success('QRIS siap!', { id: toastId });
+      } catch (error) {
+        toast.error('Gagal memproses QRIS', { id: toastId });
+      }
     }
   };
 
   const uploadFile = async (file: File, bucket: string, path: string) => {
-    const { data } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
+    const { data, error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
+    if (error) {
+      console.error('Upload Error:', error);
+      toast.error(`Gagal upload: ${error.message}`);
+      return null;
+    }
     if (data) {
       const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
       return urlData.publicUrl;
@@ -74,39 +95,107 @@ export default function Settings() {
   };
 
   const onSubmit = async (data: SettingsFormData) => {
-    if (!store) return;
-    let logo_url = store.logo_url;
-    let qris_url = store.qris_url;
+    if (!user) return;
+    
+    let logo_url = store?.logo_url || null;
+    let qris_url = store?.qris_url || null;
+    const storageFolder = store?.id || user.id;
 
     if (logoFile) {
-      logo_url = await uploadFile(logoFile, 'store-assets', `logos/${store.id}/logo.${logoFile.name.split('.').pop()}`);
+      logo_url = await uploadFile(logoFile, 'store-assets', `logos/${storageFolder}/logo.${logoFile.name.split('.').pop()}`);
     }
     if (qrisFile) {
-      qris_url = await uploadFile(qrisFile, 'store-assets', `qris/${store.id}/qris.${qrisFile.name.split('.').pop()}`);
+      qris_url = await uploadFile(qrisFile, 'store-assets', `qris/${storageFolder}/qris.${qrisFile.name.split('.').pop()}`);
     }
 
-    const { data: updated, error } = await supabase
-      .from('stores')
-      .update({ ...data, logo_url, qris_url, updated_at: new Date().toISOString() })
-      .eq('id', store.id)
-      .select()
-      .single();
+    if (store) {
+      const { data: updated, error } = await supabase
+        .from('stores')
+        .update({ ...data, logo_url, qris_url, updated_at: new Date().toISOString() })
+        .eq('id', store.id)
+        .select()
+        .single();
 
-    if (!error && updated) {
-      setStore(updated as Store);
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
+      if (!error && updated) {
+        setStore(updated as Store);
+        toast.success('Pengaturan berhasil disimpan!');
+      } else if (error) {
+        toast.error(`Gagal menyimpan: ${error.message}`);
+      }
+    } else {
+      const formattedWa = data.wa_number.startsWith('0') 
+        ? '62' + data.wa_number.slice(1) 
+        : data.wa_number;
+        
+      const { data: inserted, error } = await supabase
+        .from('stores')
+        .insert({
+          owner_id: user.id,
+          name: data.name,
+          slug: data.slug,
+          description: data.description,
+          wa_number: formattedWa,
+          theme_color: data.theme_color,
+          logo_url,
+          qris_url,
+        })
+        .select()
+        .single();
+
+      if (!error && inserted) {
+        setStore(inserted as Store);
+        toast.success('Toko baru berhasil dibuat!');
+      } else if (error) {
+        toast.error(`Gagal menyimpan toko: ${error.message}`);
+      }
     }
   };
 
   return (
-    <DashboardLayout activeHref="/dashboard/settings">
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Pengaturan Toko</h1>
-        <p className="text-sm text-gray-500">Kelola informasi dan tampilan toko</p>
+    <>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Profil & Pengaturan</h1>
+          <p className="text-sm text-gray-500 mt-1">Kelola akun dan tampilan toko digital Anda</p>
+        </div>
+        <Button 
+          variant="outline" 
+          onClick={async () => {
+            await signOut();
+            navigate('/login');
+          }}
+          className="gap-2 border-red-100 text-red-600 hover:bg-red-50 rounded-xl"
+        >
+          <LogOut className="w-4 h-4" />
+          <span className="hidden sm:inline">Keluar Akun</span>
+        </Button>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 max-w-lg">
+      {/* Plan Overview Card */}
+      <Card className="p-5 mb-6 border-black/5 bg-gradient-to-br from-gray-900 to-black text-white relative overflow-hidden">
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-md text-[10px] font-bold tracking-widest uppercase">
+              Free Plan
+            </div>
+            <span className="text-xs text-gray-400">Terdaftar sejak 2026</span>
+          </div>
+          <div className="flex justify-between items-end">
+            <div>
+              <p className="text-xs text-gray-400 mb-1">Status Toko</p>
+              <p className="text-lg font-bold">Aktif & Publik</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-gray-400 mb-1">Penggunaan Slot Produk</p>
+              <p className="text-lg font-bold">Unlimited <span className="text-xs font-normal text-gray-500">/ ∞</span></p>
+            </div>
+          </div>
+        </div>
+        {/* Background Decoration */}
+        <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/5 rounded-full blur-3xl"></div>
+      </Card>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 max-w-lg mb-10">
         {/* Logo */}
         <Card className="p-5">
           <h2 className="font-semibold text-gray-900 text-sm mb-4">Logo Toko</h2>
@@ -198,11 +287,8 @@ export default function Settings() {
           <Button type="submit" loading={isSubmitting} className="gap-2">
             <Save className="w-4 h-4" /> Simpan Pengaturan
           </Button>
-          {success && (
-            <span className="text-sm text-green-600 font-medium">✓ Tersimpan!</span>
-          )}
         </div>
       </form>
-    </DashboardLayout>
+    </>
   );
 }
