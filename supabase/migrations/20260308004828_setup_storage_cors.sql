@@ -14,13 +14,19 @@ on conflict (id) do update set public = true;
 -- ==============================================
 -- 2. SETUP CORS POLICIES (WAJIB UNTUK HTML-TO-IMAGE)
 -- ==============================================
--- Supabase secara default memblokir canvas rendering (html-to-image) dari origin luar.
--- Kita harus mengatur allowed_origins ke '*', atau domain spesifik aplikasi kita.
+-- [PERBAIKAN] Di Supabase, pengaturan CORS untuk Storage saat ini tidak bisa 
+-- dilakukan dengan UPDATE langsung ke tabel storage.buckets karena kolom 'allowed_origins' 
+-- dan 'allowed_methods' tidak ada di skema PostgreSQL standar Supabase Storage.
+-- 
+-- ACTION REQUIRED: 
+-- Anda harus mengatur CORS secara manual melalui Dashboard Supabase:
+-- 1. Buka Storage > [Nama Bucket] > Configuration > CORS.
+-- 2. Tambahkan domain aplikasi Anda (atau '*' untuk development).
 
-update storage.buckets
-set allowed_origins = array['*']::text[],
-    allowed_methods = array['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS']::text[]
-where id in ('store-assets', 'products');
+-- update storage.buckets
+-- set allowed_origins = array['*']::text[],
+--     allowed_methods = array['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS']::text[]
+-- where id in ('store-assets', 'products');
 
 -- ==============================================
 -- 3. SETUP BUCKET POLICIES (R/W Access)
