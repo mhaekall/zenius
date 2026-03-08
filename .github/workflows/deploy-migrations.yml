@@ -30,4 +30,8 @@ jobs:
           version: latest
 
       - name: Push Database Migrations
-        run: supabase db push --db-url "postgresql://postgres:${SUPABASE_DB_PASSWORD}@db.${PROJECT_ID}.supabase.co:5432/postgres"
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          supabase link --project-ref $PROJECT_ID --password "$SUPABASE_DB_PASSWORD"
+          supabase db push

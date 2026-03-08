@@ -39,7 +39,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function GuestRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuthStore();
-  if (loading) return null;
+  if (loading) return <PageLoader />;
   if (user) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
@@ -75,27 +75,40 @@ function AuthInit({ children }: { children: React.ReactNode }) {
   const { setUser, setLoading, fetchStore } = useAuthStore();
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-        fetchStore(session.user.id).finally(() => setLoading(false));
-      } else {
+    let mounted = true;
+
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUser(session.user);
+          await fetchStore(session.user.id);
+        } else {
+          setUser(null);
+        }
+      } finally {
         setLoading(false);
       }
-    });
+    };
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    initAuth();
+
+    // Listen for auth changes (ignoring the initial event as getSession handles it)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'INITIAL_SESSION') return;
+      
       if (session?.user) {
         setUser(session.user);
-        fetchStore(session.user.id);
+        await fetchStore(session.user.id);
       } else {
         setUser(null);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [setUser, setLoading, fetchStore]);
 
   return <>{children}</>;
