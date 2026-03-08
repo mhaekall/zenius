@@ -51,8 +51,16 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: 'zenius-auth',
+      name: 'openmenu-auth',
       partialize: (state) => ({ user: state.user, store: state.store }),
+      onRehydrateStorage: () => (state) => {
+        // After rehydration, if we have a user cached,
+        // set loading false optimistically
+        // AuthInit will correct it if session is actually expired
+        if (state?.user) {
+          state.setLoading(false);
+        }
+      },
     }
   )
 );

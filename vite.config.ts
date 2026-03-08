@@ -8,11 +8,12 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      disable: true,
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'Zenius Digital Catalog',
-        short_name: 'Zenius',
+        name: 'OpenMenu Digital Catalog',
+        short_name: 'OpenMenu',
         description: 'SaaS Katalog Digital QR Code untuk UMKM',
         theme_color: '#ffffff',
         background_color: '#ffffff',
@@ -43,4 +44,16 @@ export default defineConfig({
       brotliSize: true,
     })
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom', 'framer-motion', 'lucide-react'],
+          ui: ['react-hot-toast', 'jspdf', 'html2canvas'],
+          supabase: ['@supabase/supabase-js']
+        }
+      }
+    },
+    minify: false
+  }
 });

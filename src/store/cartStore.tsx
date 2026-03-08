@@ -65,7 +65,7 @@ export const useCartStore = create<CartState>()(
         get().items.reduce((sum, item) => sum + item.product.price * item.qty, 0),
     }),
     {
-      name: 'zenius-cart',
+      name: 'openmenu-cart',
     }
   )
 );

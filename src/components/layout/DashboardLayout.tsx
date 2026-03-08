@@ -73,7 +73,7 @@ export function DashboardLayout({ children, activeHref }: DashboardLayoutProps) 
         <motion.nav 
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="flex items-center justify-between px-1.5 py-1 rounded-[1.75rem] bg-white/95 backdrop-blur-xl border border-gray-200/60 shadow-[0_10px_30px_rgb(0,0,0,0.06)]"
+          className="flex items-center justify-between px-1.5 py-1 rounded-[28px] glass-thick border border-[#E8E6E1]/60 shadow-ios-lg"
         >
           {navItems.map((item) => {
             const isActive = activeHref === item.href || 
@@ -88,8 +88,8 @@ export function DashboardLayout({ children, activeHref }: DashboardLayoutProps) 
                   {/* Subtle Indicator for Active Tab */}
                   {isActive && (
                     <motion.div
-                      layoutId="active-nav-pill-light"
-                      className="absolute inset-0 bg-gray-100 rounded-2xl -z-10"
+                      layoutId="active-nav-warm"
+                      className="absolute inset-0 bg-[#EEECEA] rounded-[22px] -z-10"
                       initial={false}
                       transition={{ type: 'spring', bounce: 0.1, duration: 0.4 }}
                     />
@@ -99,7 +99,7 @@ export function DashboardLayout({ children, activeHref }: DashboardLayoutProps) 
                     <item.icon 
                       className={cn(
                         "w-[22px] h-[22px] mb-0.5 transition-colors duration-300", 
-                        isActive ? "text-black" : "text-gray-400 group-hover:text-gray-600"
+                        isActive ? "text-[#1C1917]" : "text-[#A8A29E] group-hover:text-[#78716C]"
                       )} 
                       strokeWidth={isActive ? 2.5 : 2}
                     />
@@ -107,7 +107,7 @@ export function DashboardLayout({ children, activeHref }: DashboardLayoutProps) 
                     <span 
                       className={cn(
                         "text-[11px] font-bold tracking-tight transition-colors duration-300",
-                        isActive ? "text-black" : "text-gray-400 group-hover:text-gray-600"
+                        isActive ? "text-[#1C1917]" : "text-[#A8A29E] group-hover:text-[#78716C]"
                       )}
                     >
                       {item.label}

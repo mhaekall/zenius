@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,19 +7,31 @@
 @layer base {
   * {
     -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   html {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    -webkit-font-smoothing: antialiased;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: #FAFAF8;
+    /* iOS safe area support */
+    padding-top: env(safe-area-inset-top);
   }
 
   body {
-    @apply bg-gray-50 text-gray-900;
+    background-color: #FAFAF8;
+    color: #1C1917;
+    overscroll-behavior: none;
+  }
+
+  /* iOS-style smooth scrolling */
+  * {
+    -webkit-overflow-scrolling: touch;
   }
 }
 
 @layer utilities {
+  /* Scrollbar hide */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -26,17 +40,138 @@
     display: none;
   }
 
+  /* iOS Safe Area */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .mb-safe {
+    margin-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Warm iOS Glass Material — 4 levels */
+  .glass-ultra-thin {
+    background: rgba(250, 250, 248, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .glass-thin {
+    background: rgba(250, 250, 248, 0.75);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .glass-regular {
+    background: rgba(250, 250, 248, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  .glass-thick {
+    background: rgba(250, 250, 248, 0.95);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+
+  /* iOS Typography Scale */
+  .text-ios-large-title {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+  }
+  .text-ios-title1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    line-height: 1.25;
+  }
+  .text-ios-title2 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    line-height: 1.3;
+  }
+  .text-ios-headline {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 0;
+    line-height: 1.4;
+  }
+  .text-ios-body {
+    font-size: 17px;
+    font-weight: 400;
+    letter-spacing: 0;
+    line-height: 1.5;
+  }
+  .text-ios-callout {
+    font-size: 15px;
+    font-weight: 400;
+    letter-spacing: 0;
+    line-height: 1.45;
+  }
+  .text-ios-subheadline {
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.1px;
+    line-height: 1.4;
+  }
+  .text-ios-caption {
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.2px;
+    line-height: 1.4;
+  }
+  .text-ios-caption2 {
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.3px;
+    line-height: 1.4;
+  }
+
+  /* Warm card style */
+  .card-warm {
+    background: #F5F4F0;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
+  }
+
+  /* Line clamps */
   .line-clamp-1 {
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 1;
   }
-
   .line-clamp-2 {
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+  }
+
+  /* iOS press state */
+  .ios-press {
+    transition: transform 0.1s ease, opacity 0.1s ease;
+  }
+  .ios-press:active {
+    transform: scale(0.97);
+    opacity: 0.85;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      #EEECEA 25%,
+      #F5F4F0 50%,
+      #EEECEA 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
   }
 }

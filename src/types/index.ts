@@ -1,5 +1,5 @@
 // ==========================================
-// Core Types for Zenius - QR Catalog SaaS
+// Core Types for OpenMenu - QR Catalog SaaS
 // ==========================================
 
 export interface Store {

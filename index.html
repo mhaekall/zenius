@@ -2,8 +2,25 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Zenius - Digital Catalog</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <script>
+      // Clear old zenius-auth key if exists (migration)
+      try {
+        if (localStorage.getItem('zenius-auth')) {
+          localStorage.removeItem('zenius-auth');
+        }
+        if (localStorage.getItem('zenius-cart')) {
+          localStorage.removeItem('zenius-cart');  
+        }
+      } catch(e) {}
+    </script>
+    <!-- PWA iOS Native Feel -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="OpenMenu">
+    <meta name="theme-color" content="#FAFAF8">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>OpenMenu - Digital Catalog</title>
     <script src="/unregister-sw.js"></script>
   </head>
   <body>

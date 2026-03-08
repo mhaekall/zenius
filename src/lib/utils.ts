@@ -1,5 +1,5 @@
 // ==========================================
-// Utility Functions for Zenius
+// Utility Functions for OpenMenu
 // ==========================================
 
 /**

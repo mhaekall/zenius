@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingCart, Minus, Plus, X, MessageCircle, Image, QrCode } from 'lucide-react';
+import { ShoppingCart, Minus, Plus, X, MessageCircle, QrCode, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCartStore } from '../store/cartStore';
-import { formatRupiah, buildWhatsAppUrl } from '../lib/utils';
+import { formatRupiah, buildWhatsAppUrl, cn } from '../lib/utils';
+import { CatalogSkeleton } from '../components/ui/Skeleton';
+import { ProductPlaceholder } from '../components/ui/ProductPlaceholder';
+import { ShareButton } from '../components/ui/ShareButton';
+import { PoweredBy } from '../components/ui/PoweredBy';
 import type { Store, Product } from '../types';
 
 export default function Catalog() {
@@ -26,7 +30,6 @@ export default function Catalog() {
 
     const fetchStoreAndProducts = async () => {
       try {
-        // Combined query: fetch store with its products in one go
         const { data: storeData, error } = await supabase
           .from('stores')
           .select(`
@@ -44,7 +47,6 @@ export default function Catalog() {
 
         setStore(storeData as Store);
         
-        // Data is already there from the join
         if (storeData.products) {
           const sortedProducts = (storeData.products as Product[]).filter(p => p.is_available).sort((a, b) => a.sort_order - b.sort_order);
           setProducts(sortedProducts);
@@ -52,7 +54,6 @@ export default function Catalog() {
           setCategories(cats);
         }
 
-        // Async: track page view without blocking
         supabase.from('analytics_events').insert({
           store_id: storeData.id,
           event_type: 'page_view',
@@ -88,7 +89,6 @@ export default function Catalog() {
       window.location.href
     );
 
-    // Track wa checkout
     supabase.from('analytics_events').insert({
       store_id: store.id,
       event_type: 'wa_checkout',
@@ -98,28 +98,19 @@ export default function Catalog() {
     window.open(url, '_blank');
   };
 
-  const themeColor = store?.theme_color || '#6366f1';
+  const themeColor = store?.theme_color || '#F59E0B';
   const totalItems = getTotalItems();
   const totalPrice = getTotalPrice();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 rounded-2xl bg-violet-500 animate-pulse mx-auto mb-3" />
-          <p className="text-sm text-gray-400">Memuat katalog...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <CatalogSkeleton />;
 
   if (notFound || !store) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-[#FAFAF8]">
         <div className="text-center px-4">
-          <div className="text-6xl mb-4">🔍</div>
-          <h1 className="text-xl font-bold text-gray-900 mb-2">Toko tidak ditemukan</h1>
-          <p className="text-sm text-gray-500">URL yang kamu akses tidak valid atau toko sudah tidak aktif.</p>
+          <div className="text-5xl mb-4">🥺</div>
+          <h1 className="text-ios-title2 font-bold text-[#1C1917] mb-1">Toko tidak ditemukan</h1>
+          <p className="text-ios-callout text-[#78716C]">URL yang kamu akses tidak valid atau toko sudah tidak aktif.</p>
         </div>
       </div>
     );
@@ -127,153 +118,237 @@ export default function Catalog() {
 
   return (
     <div
-      className="min-h-screen"
+      className="min-h-screen relative pb-32"
       style={{
-        background: `linear-gradient(135deg, ${themeColor}20 0%, ${themeColor}05 50%, #f9fafb 100%)`,
+        background: `linear-gradient(135deg, ${themeColor}10 0%, ${themeColor}05 50%, #FAFAF8 100%)`,
       }}
     >
-      {/* Header */}
+      {/* 1. HEADER — compact, frosted, sticky */}
       <div
-        className="sticky top-0 z-30"
-        style={{ background: `${themeColor}15`, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
+        className="sticky top-0 z-30 glass-regular border-b border-black/[0.04]"
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
-          {store.logo_url ? (
-            <img src={store.logo_url} alt={store.name} className="w-9 h-9 rounded-xl object-cover" />
-          ) : (
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm"
-              style={{ background: themeColor }}
-            >
-              {store.name[0]}
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <h1 className="font-bold text-gray-900 text-sm truncate">{store.name}</h1>
-            {store.description && (
-              <p className="text-xs text-gray-500 truncate">{store.description}</p>
+        <div className="max-w-lg mx-auto px-4 h-[52px] flex items-center gap-2.5">
+          {/* Logo */}
+          <div className="flex-shrink-0">
+            {store.logo_url ? (
+              <img
+                src={store.logo_url}
+                alt={store.name}
+                className="w-[34px] h-[34px] rounded-full object-cover ring-2"
+                style={{ '--tw-ring-color': themeColor } as React.CSSProperties}
+              />
+            ) : (
+              <div
+                className="w-[34px] h-[34px] rounded-full flex items-center 
+                           justify-center text-white text-sm font-bold shadow-ios-sm"
+                style={{ background: themeColor }}
+              >
+                {store.name.charAt(0).toUpperCase()}
+              </div>
             )}
           </div>
-          {store.qris_url && (
-            <button
-              onClick={() => setQrisOpen(true)}
-              className="flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-xl text-white"
-              style={{ background: themeColor }}
-            >
-              <QrCode className="w-3 h-3" /> QRIS
-            </button>
-          )}
+
+          {/* Store name */}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-ios-headline font-bold text-[#1C1917] truncate leading-none">
+              {store.name}
+            </h1>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <ShareButton
+              url={window.location.href}
+              title={`${store.name} — Katalog Digital`}
+              text={`Cek katalog ${store.name}! 🛍️`}
+              themeColor={themeColor}
+              variant="icon"
+            />
+            {store.qris_url && (
+              <motion.button
+                onClick={() => setQrisOpen(true)}
+                whileTap={{ scale: 0.92 }}
+                transition={{ type:'spring', stiffness:400, damping:30 }}
+                className="flex items-center gap-1 text-[11px] font-bold 
+                           px-2.5 py-1.5 rounded-full text-white shadow-ios-sm"
+                style={{ background: themeColor }}
+              >
+                <QrCode className="w-3 h-3" />
+                QRIS
+              </motion.button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Category filter */}
+      {/* 2. CATEGORY PILLS — iOS tab feel */}
       {categories.length > 1 && (
-        <div className="sticky top-[52px] z-20 bg-white/70 backdrop-blur-sm border-b border-white/50">
-          <div className="max-w-lg mx-auto px-4 py-2 flex gap-2 overflow-x-auto scrollbar-hide">
+        <div
+          className="sticky z-20 bg-[#FAFAF8]/90 backdrop-blur-sm"
+          style={{ top: '52px' }}
+        >
+          <div
+            className="flex gap-2 px-4 py-2 overflow-x-auto scrollbar-hide relative"
+            style={{
+              maskImage: 'linear-gradient(to right, transparent, black 12px, black calc(100% - 12px), transparent)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent, black 12px, black calc(100% - 12px), transparent)'
+            }}
+          >
             {categories.map((cat) => (
-              <button
+              <motion.button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
-                style={
-                  activeCategory === cat
-                    ? { background: themeColor, color: 'white' }
-                    : { background: 'rgba(255,255,255,0.8)', color: '#6b7280' }
-                }
+                whileTap={{ scale: 0.94 }}
+                transition={{ type:'spring', stiffness:400, damping:30 }}
+                className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] 
+                           font-semibold transition-colors duration-200 whitespace-nowrap relative"
+                style={{
+                   color: activeCategory === cat ? 'white' : '#78716C'
+                }}
               >
-                {cat}
-              </button>
+                 {activeCategory === cat && (
+                    <motion.div
+                      layoutId="active-category"
+                      className="absolute inset-0 rounded-full -z-10 shadow-ios-sm"
+                      style={{ background: themeColor }}
+                      transition={{ type:'spring', stiffness:400, damping:30 }}
+                    />
+                 )}
+                 {!activeCategory || activeCategory !== cat ? (
+                     <div className="absolute inset-0 rounded-full -z-10 bg-[#EEECEA]" />
+                 ) : null}
+                <span className="relative z-10">{cat}</span>
+              </motion.button>
             ))}
           </div>
         </div>
       )}
 
-      {/* Products */}
-      <div className="max-w-lg mx-auto px-4 py-4 pb-32">
+      {/* 3. PRODUCT GRID — image-first, efficient */}
+      <div className="max-w-lg mx-auto px-4 py-3 pb-36">
         {filteredProducts.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-4xl mb-3">🥺</p>
-            <p className="text-gray-500 text-sm">Belum ada produk tersedia</p>
+          <div className="text-center py-20">
+            <p className="text-3xl mb-2">🥺</p>
+            <p className="text-ios-caption text-[#A8A29E]">
+              Belum ada produk tersedia
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            {filteredProducts.map((product) => {
-              const cartItem = items.find((i) => i.product.id === product.id);
+            {filteredProducts.map((product, index) => {
+              const cartItem = items.find(i => i.product.id === product.id);
+              const delay = Math.min(index * 0.04, 0.3); // Cap delay at 0.3s
               return (
                 <motion.div
                   key={product.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.95 }}
+                  initial={{ opacity: 0, scale: 0.94 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="rounded-2xl overflow-hidden"
-                  style={{
-                    background: 'rgba(255,255,255,0.8)',
-                    backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255,255,255,0.6)',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+                  transition={{
+                    type: 'spring',
+                    stiffness: 400,
+                    damping: 30,
+                    delay: delay
                   }}
+                  className="rounded-[18px] overflow-hidden bg-[#F5F4F0] 
+                             border border-black/[0.06] shadow-ios-sm flex flex-col"
                 >
-                  <div className="relative">
-                    <div className="aspect-square bg-gray-100">
-                      {product.image_url ? (
-                        <img
-                          src={product.image_url}
-                          alt={product.name}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Image className="w-10 h-10 text-gray-300" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="p-3">
-                    <p className="font-semibold text-gray-900 text-xs leading-tight">{product.name}</p>
-                    {product.description && (
-                      <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{product.description}</p>
+                  {/* Image */}
+                  <div className="aspect-square bg-[#EEECEA] relative overflow-hidden">
+                    {product.image_url ? (
+                      <img
+                        src={product.image_url}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <ProductPlaceholder
+                        name={product.name}
+                        themeColor={themeColor}
+                      />
                     )}
-                    <p className="font-bold text-xs mt-1" style={{ color: themeColor }}>
+                  </div>
+
+                  {/* Info */}
+                  <div className="p-2.5 flex-1 flex flex-col">
+                    <p className="text-[13px] font-semibold text-[#1C1917] 
+                                 line-clamp-1 leading-snug flex-1">
+                      {product.name}
+                    </p>
+                    <p className="text-[12px] font-bold mt-0.5 mb-2"
+                       style={{ color: themeColor }}>
                       {formatRupiah(product.price)}
                     </p>
 
-                    {/* Add/Remove buttons */}
-                    {cartItem ? (
-                      <div className="flex items-center gap-2 mt-2">
-                        <button
-                          onClick={() => updateQty(product.id, cartItem.qty - 1)}
-                          className="w-6 h-6 rounded-lg flex items-center justify-center text-white"
+                    {/* Cart controls */}
+                    <AnimatePresence mode="wait" initial={false}>
+                      {cartItem ? (
+                        <motion.div
+                          key="controls"
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          transition={{ type:'spring', stiffness:500, damping:25 }}
+                          className="flex items-center justify-between 
+                                     bg-[#EEECEA] rounded-full px-1 py-0.5"
+                        >
+                          <motion.button
+                            whileTap={{ scale: 0.85 }}
+                            onClick={() => updateQty(product.id, cartItem.qty - 1)}
+                            className="w-7 h-7 rounded-full flex items-center 
+                                       justify-center text-white text-sm font-bold shadow-sm"
+                            style={{ background: themeColor }}
+                          >
+                            <Minus className="w-3.5 h-3.5" />
+                          </motion.button>
+                          <span className="text-[13px] font-bold text-[#1C1917] 
+                                          min-w-[20px] text-center">
+                            {cartItem.qty}
+                          </span>
+                          <motion.button
+                            whileTap={{ scale: 0.85 }}
+                            onClick={() => {
+                              addItem(product, storeSlug);
+                              if (navigator.vibrate) navigator.vibrate(10);
+                              supabase.from('analytics_events').insert({
+                                store_id: store.id,
+                                event_type: 'add_to_cart',
+                                product_id: product.id,
+                              });
+                            }}
+                            className="w-7 h-7 rounded-full flex items-center 
+                                       justify-center text-white text-sm font-bold shadow-sm"
+                            style={{ background: themeColor }}
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </motion.button>
+                        </motion.div>
+                      ) : (
+                        <motion.button
+                          key="add"
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          transition={{ type:'spring', stiffness:500, damping:25 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => {
+                            addItem(product, storeSlug);
+                            if (navigator.vibrate) navigator.vibrate(10);
+                            supabase.from('analytics_events').insert({
+                              store_id: store.id,
+                              event_type: 'add_to_cart',
+                              product_id: product.id,
+                            });
+                          }}
+                          className="w-full h-[30px] rounded-full text-[11px] 
+                                     font-bold text-white shadow-sm border border-white/20"
                           style={{ background: themeColor }}
                         >
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <span className="text-xs font-bold text-gray-900 flex-1 text-center">{cartItem.qty}</span>
-                        <button
-                          onClick={() => addItem(product, storeSlug)}
-                          className="w-6 h-6 rounded-lg flex items-center justify-center text-white"
-                          style={{ background: themeColor }}
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          addItem(product, storeSlug);
-                          supabase.from('analytics_events').insert({
-                            store_id: store.id,
-                            event_type: 'add_to_cart',
-                            product_id: product.id,
-                          });
-                        }}
-                        className="mt-2 w-full py-1.5 rounded-lg text-xs font-medium text-white transition-opacity hover:opacity-90"
-                        style={{ background: themeColor }}
-                      >
-                        + Tambah
-                      </button>
-                    )}
+                          Tambah
+                        </motion.button>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </motion.div>
               );
@@ -282,29 +357,66 @@ export default function Catalog() {
         )}
       </div>
 
-      {/* Floating Cart Button */}
+      {/* Powered By */}
+      <div className="fixed bottom-3 right-3 z-30">
+         <PoweredBy />
+      </div>
+
+      {/* 4. CART FAB — Apple Wallet feel */}
       <AnimatePresence>
         {totalItems > 0 && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 px-4 w-full max-w-lg"
+            initial={{ opacity: 0, y: 80, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 80, scale: 0.9 }}
+            transition={{ type:'spring', stiffness:400, damping:30 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 
+                       w-full max-w-[calc(100%-2rem)] sm:max-w-md px-0"
           >
-            <button
+            <motion.button
               onClick={() => setCartOpen(true)}
-              className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-lg text-white font-semibold text-sm transition-transform active:scale-95"
-              style={{ background: themeColor }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ type:'spring', stiffness:400, damping:30 }}
+              className="w-full h-14 rounded-[18px] flex items-center px-4 
+                         shadow-ios-lg text-white border border-white/20"
+              style={{
+                background: `linear-gradient(135deg, ${themeColor} 0%, ${themeColor}dd 100%)`
+              }}
             >
-              <ShoppingCart className="w-5 h-5" />
-              <span className="flex-1 text-left">{totalItems} item dipilih</span>
-              <span className="font-bold">{formatRupiah(totalPrice)}</span>
-            </button>
+              {/* Left: icon + count */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <ShoppingCart className="w-5 h-5" />
+                <motion.span
+                  key={totalItems}
+                  initial={{ scale: 1.4 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type:'spring', stiffness:500, damping:20 }}
+                  className="w-5 h-5 bg-white/25 rounded-full text-[11px] 
+                             font-bold flex items-center justify-center"
+                >
+                  {totalItems}
+                </motion.span>
+              </div>
+
+              {/* Center: price */}
+              <motion.span
+                key={totalPrice}
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type:'spring', stiffness:400, damping:30 }}
+                className="flex-1 text-center text-[15px] font-bold"
+              >
+                {formatRupiah(totalPrice)}
+              </motion.span>
+
+              {/* Right: chevron */}
+              <ChevronRight className="w-5 h-5 opacity-70 flex-shrink-0" />
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Cart Sheet */}
+      {/* 5. CART BOTTOM SHEET — iOS native feel */}
       <AnimatePresence>
         {cartOpen && (
           <div className="fixed inset-0 z-50 flex items-end justify-center">
@@ -319,60 +431,67 @@ export default function Catalog() {
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 30 }}
-              className="relative bg-white rounded-t-3xl w-full max-w-lg max-h-[80vh] overflow-y-auto"
+              transition={{ type: 'spring', stiffness: 300, damping: 35 }}
+              className="relative bg-[#FAFAF8] rounded-t-[28px] w-full max-w-lg max-h-[75vh] flex flex-col shadow-2xl"
             >
-              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-                <h2 className="font-bold text-gray-900">Keranjang ({totalItems})</h2>
-                <button onClick={() => setCartOpen(false)}>
-                  <X className="w-5 h-5 text-gray-400" />
+              <div className="w-12 h-1.5 bg-[#E8E6E1] rounded-full mx-auto mt-3 mb-1" />
+              
+              <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.04]">
+                <h2 className="font-bold text-[#1C1917] text-lg">Pesanan ({totalItems})</h2>
+                <button 
+                  onClick={() => setCartOpen(false)} 
+                  className="p-2 bg-[#EEECEA] rounded-full text-[#78716C] ios-press"
+                >
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="p-5 space-y-3">
+              <div className="p-0 overflow-y-auto flex-1 custom-scrollbar">
                 {items.map((item) => (
-                  <div key={item.product.id} className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-gray-100 flex-shrink-0 overflow-hidden">
+                  <div key={item.product.id} className="flex items-center gap-3 px-4 py-3 border-b border-black/[0.04] last:border-0">
+                    <div className="w-11 h-11 rounded-[12px] bg-[#EEECEA] flex-shrink-0 overflow-hidden relative">
                       {item.product.image_url ? (
                         <img src={item.product.image_url} alt={item.product.name} className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Image className="w-5 h-5 text-gray-300" />
-                        </div>
+                        <ProductPlaceholder 
+                          name={item.product.name}
+                          themeColor={themeColor}
+                          size="sm"
+                        />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{item.product.name}</p>
-                      <p className="text-xs" style={{ color: themeColor }}>{formatRupiah(item.product.price)}</p>
+                      <p className="text-[13px] font-semibold text-[#1C1917] truncate">{item.product.name}</p>
+                      <p className="text-[12px] mt-0.5" style={{ color: themeColor }}>{formatRupiah(item.product.price)}</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <button
                         onClick={() => updateQty(item.product.id, item.qty - 1)}
-                        className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center"
+                        className="w-7 h-7 rounded-full border border-[#E8E6E1] bg-[#FAFAF8] flex items-center justify-center text-[#1C1917] ios-press shadow-sm"
                       >
-                        <Minus className="w-3 h-3" />
+                        <Minus className="w-3.5 h-3.5" />
                       </button>
-                      <span className="text-sm font-bold w-5 text-center">{item.qty}</span>
+                      <span className="text-sm font-bold w-5 text-center text-[#1C1917]">{item.qty}</span>
                       <button
                         onClick={() => addItem(item.product, storeSlug)}
-                        className="w-7 h-7 rounded-lg text-white flex items-center justify-center"
+                        className="w-7 h-7 rounded-full text-white flex items-center justify-center ios-press shadow-sm"
                         style={{ background: themeColor }}
                       >
-                        <Plus className="w-3 h-3" />
+                        <Plus className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="sticky bottom-0 bg-white border-t border-gray-100 p-5">
-                <div className="flex justify-between text-sm mb-3">
-                  <span className="text-gray-500">Total</span>
-                  <span className="font-bold text-gray-900">{formatRupiah(totalPrice)}</span>
+              <div className="bg-[#FAFAF8] border-t border-black/[0.06] px-4 py-4 pb-safe">
+                <div className="flex justify-between items-center mb-4 px-1">
+                  <span className="text-[#78716C] font-medium text-sm">Total Pembayaran</span>
+                  <span className="font-bold text-[#1C1917] text-ios-subhead">{formatRupiah(totalPrice)}</span>
                 </div>
                 <button
                   onClick={handleCheckout}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-white font-semibold text-sm"
+                  className="w-full h-[52px] flex items-center justify-center gap-2 rounded-[14px] text-white font-bold text-base shadow-ios-md ios-press"
                   style={{ background: '#25D366' }}
                 >
                   <MessageCircle className="w-5 h-5" />
@@ -384,7 +503,7 @@ export default function Catalog() {
         )}
       </AnimatePresence>
 
-      {/* QRIS Modal */}
+      {/* 6. QRIS MODAL — centered sheet */}
       <AnimatePresence>
         {qrisOpen && store.qris_url && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -392,21 +511,27 @@ export default function Catalog() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
               onClick={() => setQrisOpen(false)}
             />
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="relative bg-white rounded-3xl p-6 w-full max-w-xs text-center"
+              transition={{ type: 'spring', stiffness: 400, damping: 30, mass: 0.8 }}
+              className="relative bg-[#FAFAF8] rounded-[28px] p-5 w-full max-w-xs text-center shadow-ios-lg border border-white/50"
             >
-              <button onClick={() => setQrisOpen(false)} className="absolute top-4 right-4 text-gray-400">
-                <X className="w-5 h-5" />
+              <button 
+                onClick={() => setQrisOpen(false)} 
+                className="absolute top-4 right-4 p-1.5 bg-[#EEECEA] rounded-full text-[#78716C] ios-press"
+              >
+                <X className="w-4 h-4" />
               </button>
-              <h3 className="font-bold text-gray-900 mb-4">Bayar via QRIS</h3>
-              <img src={store.qris_url} alt="QRIS" className="w-full rounded-xl" />
-              <p className="text-xs text-gray-400 mt-3">Scan menggunakan GoPay, OVO, Dana, atau m-banking</p>
+              <h3 className="font-bold text-[#1C1917] mb-4 text-lg">Bayar via QRIS</h3>
+              <div className="bg-white p-2 rounded-[18px] shadow-sm border border-[#E8E6E1] mb-3">
+                <img src={store.qris_url} alt="QRIS" className="w-full rounded-[14px]" />
+              </div>
+              <p className="text-ios-caption text-[#A8A29E] mt-2">Scan menggunakan GoPay, OVO, Dana, atau m-banking</p>
             </motion.div>
           </div>
         )}
