@@ -55,35 +55,29 @@ ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE analytics_events ENABLE ROW LEVEL SECURITY;
 
 -- Stores Policies
-DROP POLICY IF EXISTS "Owners can manage own store" ON stores;
 CREATE POLICY "Owners can manage own store" ON stores
   FOR ALL USING (auth.uid() = owner_id);
 
-DROP POLICY IF EXISTS "Public can read active stores" ON stores;
 CREATE POLICY "Public can read active stores" ON stores
-  FOR SELECT USING (is_active = true OR auth.uid() = owner_id);
+  FOR SELECT USING (is_active = true);
 
 -- Products Policies
-DROP POLICY IF EXISTS "Owners can manage own products" ON products;
 CREATE POLICY "Owners can manage own products" ON products
   FOR ALL USING (
     EXISTS (SELECT 1 FROM stores WHERE stores.id = store_id AND stores.owner_id = auth.uid())
   );
 
-DROP POLICY IF EXISTS "Public can read available products" ON products;
 CREATE POLICY "Public can read available products" ON products
   FOR SELECT USING (
     is_available = true AND
-    EXISTS (SELECT 1 FROM stores WHERE stores.id = store_id AND (stores.is_active = true OR stores.owner_id = auth.uid()))
+    EXISTS (SELECT 1 FROM stores WHERE stores.id = store_id AND stores.is_active = true)
   );
 
 -- Analytics Policies
-DROP POLICY IF EXISTS "Owners can read own store analytics" ON analytics_events;
 CREATE POLICY "Owners can read own store analytics" ON analytics_events
   FOR SELECT USING (
     EXISTS (SELECT 1 FROM stores WHERE stores.id = store_id AND stores.owner_id = auth.uid())
   );
 
-DROP POLICY IF EXISTS "Public can insert analytics" ON analytics_events;
 CREATE POLICY "Public can insert analytics" ON analytics_events
   FOR INSERT WITH CHECK (true);
