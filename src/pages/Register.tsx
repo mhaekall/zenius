@@ -23,7 +23,7 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState<'form' | 'success'>('form');
-  const { setUser, setStore } = useAuthStore();
+  const { setUser, setStore, fetchStore } = useAuthStore();
   const navigate = useNavigate();
 
   const {
@@ -77,7 +77,7 @@ export default function Register() {
         wa_number: data.waNumber.startsWith('0')
           ? '62' + data.waNumber.slice(1)
           : data.waNumber,
-        theme_color: '#6366f1',
+        theme_color: '#F59E0B',
       })
       .select()
       .single();
@@ -88,51 +88,55 @@ export default function Register() {
       return;
     }
 
-    setUser(authData.user);
-    setStore(storeData);
+    // 3. Manually set store in Zustand
+    useAuthStore.getState().setStore(storeData);
+    
+    // 4. Show success then navigate
     setStep('success');
     setTimeout(() => navigate('/dashboard'), 2000);
   };
 
   if (step === 'success') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-violet-50 to-purple-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center p-4">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
           className="text-center"
         >
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-10 h-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          <div className="w-20 h-20 bg-[#F5F4F0] rounded-full flex items-center justify-center mx-auto mb-4 border border-[#34C759] shadow-ios-md">
+            <svg className="w-10 h-10 text-[#34C759]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Toko berhasil dibuat! 🎉</h2>
-          <p className="text-gray-500 text-sm">Mengarahkan ke dashboard...</p>
+          <h2 className="text-xl font-bold text-[#1C1917] mb-2">Toko berhasil dibuat! 🎉</h2>
+          <p className="text-[#78716C] text-sm">Mengarahkan ke dashboard...</p>
         </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         className="w-full max-w-sm"
       >
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-5">
-            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-200">
+            <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-amber-500 rounded-[14px] flex items-center justify-center shadow-ios-sm border border-white/20">
               <Store className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-900">Zenius</span>
+            <span className="text-xl font-bold text-[#1C1917] tracking-tight">OpenMenu</span>
           </div>
-          <h1 className="text-xl font-bold text-gray-900">Buat Katalog Digital</h1>
-          <p className="text-sm text-gray-500 mt-1">Gratis & siap dalam 2 menit</p>
+          <h1 className="text-xl font-bold text-[#1C1917]">Buat Katalog Digital</h1>
+          <p className="text-sm text-[#78716C] mt-1">Gratis & siap dalam 2 menit</p>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-xl shadow-gray-100 border border-gray-100 p-6">
+        <div className="bg-[#F5F4F0] rounded-[28px] shadow-ios-md border border-black/[0.06] p-6">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <Input
@@ -142,8 +146,8 @@ export default function Register() {
                 error={errors.storeName?.message}
               />
               {previewSlug && (
-                <p className="text-xs text-gray-400 mt-1">
-                  URL katalog: <span className="text-violet-600 font-medium">zenius.app/{previewSlug}</span>
+                <p className="text-xs text-[#A8A29E] mt-1 px-1">
+                  URL katalog: <span className="text-[#1C1917] font-medium">openmenu.app/{previewSlug}</span>
                 </p>
               )}
             </div>
@@ -174,7 +178,7 @@ export default function Register() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-8 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-[34px] text-[#A8A29E] hover:text-[#1C1917] transition-colors p-1"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -183,32 +187,33 @@ export default function Register() {
             <AnimatePresence>
               {error && (
                 <motion.div
-                  initial={{ opacity: 0, x: -5 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="text-sm text-red-500 bg-red-50 rounded-xl px-3 py-2"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="text-sm text-red-500 bg-red-50 rounded-[14px] px-3 py-2.5 border border-red-100"
                 >
                   {error}
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <Button type="submit" loading={isSubmitting} className="w-full mt-2">
+            <Button type="submit" loading={isSubmitting} className="w-full py-4 text-base mt-2 shadow-ios-sm">
               Buat Toko Gratis
             </Button>
             
             <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
+                <div className="w-full border-t border-black/[0.06]"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Atau daftar dengan</span>
+                <span className="px-3 bg-[#F5F4F0] text-[#A8A29E] text-xs uppercase tracking-widest font-semibold">Atau</span>
               </div>
             </div>
 
             <Button 
               type="button" 
-              variant="outline" 
-              className="w-full gap-2" 
+              variant="secondary" 
+              className="w-full gap-2 py-4 shadow-ios-sm border border-black/[0.06] bg-[#FAFAF8] text-[#1C1917]" 
               onClick={handleGoogleLogin}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -234,9 +239,9 @@ export default function Register() {
           </form>
         </div>
 
-        <p className="text-center text-sm text-gray-500 mt-5">
+        <p className="text-center text-sm text-[#78716C] mt-6">
           Sudah punya akun?{' '}
-          <Link to="/login" className="text-violet-600 font-semibold hover:underline">
+          <Link to="/login" className="text-[#F59E0B] font-bold hover:underline">
             Masuk di sini
           </Link>
         </p>

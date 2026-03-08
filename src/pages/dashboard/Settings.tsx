@@ -2,14 +2,15 @@ import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Camera, Save, LogOut } from 'lucide-react';
+import { Camera, Save, LogOut, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import imageCompression from 'browser-image-compression';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
-import { Button, Input, Textarea, Card } from '../../components/ui';
-import { sanitizeSlug } from '../../lib/utils';
+import { Button, Input, Textarea } from '../../components/ui';
+import { SettingsSkeleton } from '../../components/ui/Skeleton';
+import { sanitizeSlug, cn } from '../../lib/utils';
 import type { Store } from '../../types';
 
 const settingsSchema = z.object({
@@ -44,11 +45,9 @@ export default function Settings() {
       description: store?.description || '',
       slug: store?.slug || '',
       wa_number: store?.wa_number || '',
-      theme_color: store?.theme_color || '#6366f1',
+      theme_color: store?.theme_color || '#F59E0B',
     },
   });
-
-  const storeName = watch('name');
 
   const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -153,142 +152,136 @@ export default function Settings() {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4 px-1">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Profil & Pengaturan</h1>
-          <p className="text-sm text-gray-500 mt-1">Kelola akun dan tampilan toko digital Anda</p>
+          <h1 className="text-ios-title2 text-[#1C1917]">Pengaturan</h1>
         </div>
-        <Button 
-          variant="outline" 
-          onClick={async () => {
-            await signOut();
-            navigate('/login');
-          }}
-          className="gap-2 border-red-100 text-red-600 hover:bg-red-50 rounded-xl"
-        >
-          <LogOut className="w-4 h-4" />
-          <span className="hidden sm:inline">Keluar Akun</span>
-        </Button>
       </div>
 
-      {/* Plan Overview Card */}
-      <Card className="p-5 mb-6 border-black/5 bg-gradient-to-br from-gray-900 to-black text-white relative overflow-hidden">
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-md text-[10px] font-bold tracking-widest uppercase">
-              Free Plan
-            </div>
-            <span className="text-xs text-gray-400">Terdaftar sejak 2026</span>
-          </div>
-          <div className="flex justify-between items-end">
-            <div>
-              <p className="text-xs text-gray-400 mb-1">Status Toko</p>
-              <p className="text-lg font-bold">Aktif & Publik</p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-gray-400 mb-1">Penggunaan Slot Produk</p>
-              <p className="text-lg font-bold">Unlimited <span className="text-xs font-normal text-gray-500">/ ∞</span></p>
-            </div>
-          </div>
-        </div>
-        {/* Background Decoration */}
-        <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/5 rounded-full blur-3xl"></div>
-      </Card>
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 max-w-lg mb-10">
-        {/* Logo */}
-        <Card className="p-5">
-          <h2 className="font-semibold text-gray-900 text-sm mb-4">Logo Toko</h2>
-          <div className="flex items-center gap-4">
-            <div
+      {!store && !user ? <SettingsSkeleton /> : (
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pb-10">
+        
+        {/* Section: Tampilan Toko */}
+        <section>
+          <h2 className="text-ios-caption uppercase tracking-widest text-[#A8A29E] mb-1.5 px-3">Tampilan Toko</h2>
+          <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] shadow-ios-sm overflow-hidden">
+            
+            {/* Logo Row */}
+            <div 
               onClick={() => logoRef.current?.click()}
-              className="w-16 h-16 rounded-2xl bg-gray-100 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity relative flex items-center justify-center"
+              className="flex items-center justify-between py-3 px-4 border-b border-black/[0.04] cursor-pointer active:bg-[#EEECEA] transition-colors"
             >
-              {logoPreview ? (
-                <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
-              ) : (
-                <Camera className="w-6 h-6 text-gray-400" />
-              )}
+              <span className="text-sm font-medium text-[#1C1917]">Logo</span>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-[8px] bg-[#EEECEA] overflow-hidden flex items-center justify-center">
+                  {logoPreview ? (
+                    <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-[10px] text-[#A8A29E]">Kosong</span>
+                  )}
+                </div>
+                <span className="text-sm text-[#78716C]">Ubah</span>
+                <ChevronRight className="w-4 h-4 text-[#A8A29E]" />
+              </div>
+              <input ref={logoRef} type="file" accept="image/*" onChange={handleLogoChange} className="hidden" />
             </div>
-            <div>
-              <button
-                type="button"
-                onClick={() => logoRef.current?.click()}
-                className="text-sm text-violet-600 font-medium hover:underline"
-              >
-                Ganti Logo
-              </button>
-              <p className="text-xs text-gray-400 mt-0.5">JPG, PNG • Maks 2MB</p>
-            </div>
-          </div>
-          <input ref={logoRef} type="file" accept="image/*" onChange={handleLogoChange} className="hidden" />
-        </Card>
 
-        {/* Informasi Toko */}
-        <Card className="p-5 space-y-4">
-          <h2 className="font-semibold text-gray-900 text-sm">Informasi Toko</h2>
-          <Input
-            label="Nama Toko"
-            {...register('name')}
-            error={errors.name?.message}
-            onChange={(e) => {
-              register('name').onChange(e);
-              setValue('slug', sanitizeSlug(e.target.value));
-            }}
-          />
-          <Textarea label="Deskripsi (opsional)" {...register('description')} placeholder="Ceritakan tentang toko kamu..." />
-          <div>
+            {/* Tema Row */}
+            <div className="flex items-center justify-between py-3 px-4 cursor-pointer">
+              <span className="text-sm font-medium text-[#1C1917]">Warna Aksen</span>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="color" 
+                  {...register('theme_color')} 
+                  className="w-8 h-8 rounded-[8px] cursor-pointer border-0 p-0 bg-transparent" 
+                />
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        {/* Section: Informasi Dasar */}
+        <section>
+          <h2 className="text-ios-caption uppercase tracking-widest text-[#A8A29E] mb-1.5 px-3">Informasi Dasar</h2>
+          <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] shadow-ios-sm overflow-hidden px-4 py-2 space-y-3">
+            <Input
+              label="Nama Toko"
+              {...register('name')}
+              error={errors.name?.message}
+              onChange={(e) => {
+                register('name').onChange(e);
+                setValue('slug', sanitizeSlug(e.target.value));
+              }}
+              className="bg-[#EEECEA]"
+            />
             <Input
               label="URL Toko (slug)"
               {...register('slug')}
               error={errors.slug?.message}
               hint={`Katalog: ${window.location.origin}/c/${watch('slug') || store?.slug}`}
+              className="bg-[#EEECEA]"
+            />
+            <Input
+              label="Nomor WhatsApp"
+              type="tel"
+              {...register('wa_number')}
+              error={errors.wa_number?.message}
+              hint="Format: 628xxxxxxxxx"
+              className="bg-[#EEECEA]"
+            />
+            <Textarea 
+              label="Deskripsi (opsional)" 
+              {...register('description')} 
+              className="bg-[#EEECEA]"
             />
           </div>
-          <Input
-            label="Nomor WhatsApp"
-            type="tel"
-            {...register('wa_number')}
-            error={errors.wa_number?.message}
-            hint="Format: 628xxxxxxxxx atau 08xxxxxxxxx"
-          />
-        </Card>
+        </section>
 
-        {/* Tampilan */}
-        <Card className="p-5">
-          <h2 className="font-semibold text-gray-900 text-sm mb-4">Warna Tema Katalog</h2>
-          <div className="flex items-center gap-3">
-            <input type="color" {...register('theme_color')} className="w-10 h-10 rounded-xl cursor-pointer" />
-            <span className="text-sm text-gray-600">Warna aksen utama katalog publik</span>
-          </div>
-        </Card>
-
-        {/* QRIS */}
-        <Card className="p-5">
-          <h2 className="font-semibold text-gray-900 text-sm mb-1">Gambar QRIS Pembayaran</h2>
-          <p className="text-xs text-gray-400 mb-4">Upload gambar QRIS milikmu. Pelanggan bisa scan untuk bayar.</p>
-          <div
-            onClick={() => qrisRef.current?.click()}
-            className="border-2 border-dashed border-gray-200 rounded-xl p-4 cursor-pointer hover:border-violet-300 transition-colors text-center"
-          >
-            {qrisPreview ? (
-              <img src={qrisPreview} alt="QRIS" className="h-32 object-contain mx-auto rounded-lg" />
-            ) : (
-              <div className="py-4">
-                <Camera className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-xs text-gray-400">Klik untuk upload QRIS</p>
+        {/* Section: Pembayaran */}
+        <section>
+          <h2 className="text-ios-caption uppercase tracking-widest text-[#A8A29E] mb-1.5 px-3">Pembayaran</h2>
+          <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] shadow-ios-sm overflow-hidden">
+            <div 
+              onClick={() => qrisRef.current?.click()}
+              className="flex items-center justify-between py-3 px-4 cursor-pointer active:bg-[#EEECEA] transition-colors"
+            >
+              <span className="text-sm font-medium text-[#1C1917]">QRIS Pembayaran</span>
+              <div className="flex items-center gap-2">
+                {qrisPreview ? (
+                  <img src={qrisPreview} alt="QRIS" className="h-8 object-contain rounded-[4px]" />
+                ) : (
+                  <span className="text-sm text-[#78716C]">Upload</span>
+                )}
+                <ChevronRight className="w-4 h-4 text-[#A8A29E]" />
               </div>
-            )}
+              <input ref={qrisRef} type="file" accept="image/*" onChange={handleQrisChange} className="hidden" />
+            </div>
           </div>
-          <input ref={qrisRef} type="file" accept="image/*" onChange={handleQrisChange} className="hidden" />
-        </Card>
+        </section>
 
-        <div className="flex items-center gap-3">
-          <Button type="submit" loading={isSubmitting} className="gap-2">
-            <Save className="w-4 h-4" /> Simpan Pengaturan
-          </Button>
-        </div>
+        <Button type="submit" loading={isSubmitting} className="w-full py-3.5 shadow-ios-sm mt-4">
+          <Save className="w-4 h-4" /> Simpan Perubahan
+        </Button>
+
+        {/* Section: Akun */}
+        <section className="mt-8">
+          <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] shadow-ios-sm overflow-hidden">
+            <button
+              type="button"
+              onClick={async () => {
+                await signOut();
+                navigate('/login');
+              }}
+              className="w-full flex items-center justify-center py-3.5 px-4 text-sm font-medium text-red-500 active:bg-[#EEECEA] transition-colors"
+            >
+              <LogOut className="w-4 h-4 mr-2" /> Keluar Akun
+            </button>
+          </div>
+        </section>
+
       </form>
+      )}
     </>
   );
 }

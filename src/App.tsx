@@ -32,10 +32,10 @@ const QRCodePage = lazyWithRetry(() => import('./pages/dashboard/QRCode'));
 
 // Performance-friendly Loading Spinner
 const PageLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gray-50/50 backdrop-blur-sm">
+  <div className="min-h-screen flex items-center justify-center bg-[#FAFAF8]">
     <div className="text-center">
-      <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl animate-pulse mx-auto mb-3" />
-      <p className="text-xs text-gray-400 font-medium">Memuat...</p>
+      <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-amber-500 rounded-[18px] shimmer mx-auto mb-3 shadow-ios-md" />
+      <p className="text-ios-caption text-[#A8A29E] font-medium">Memuat...</p>
     </div>
   </div>
 );
@@ -51,8 +51,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function GuestRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuthStore();
+  
+  // While loading, render nothing — do not redirect
   if (loading) return <PageLoader />;
+  
+  // Only redirect if we are SURE user is authenticated
   if (user) return <Navigate to="/dashboard" replace />;
+  
   return <>{children}</>;
 }
 
@@ -89,19 +94,13 @@ function AuthInit({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    const initAuth = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-           if (error.name === 'AuthRetryableFetchError' || error.message.includes('Lock') || error.name === 'AbortError') {
-             console.warn("Ignored Supabase auth lock/fetch conflict:", error);
-           } else {
-             console.error("Supabase auth error:", error);
-             setUser(null);
-           }
-           return;
-        }
+    // Single source of truth: onAuthStateChange handles everything
+    // including the initial session check via INITIAL_SESSION event
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return;
+
+        console.log('[Auth]', event, session?.user?.email);
 
         if (session?.user) {
           setUser(session.user);
@@ -109,35 +108,23 @@ function AuthInit({ children }: { children: React.ReactNode }) {
         } else {
           setUser(null);
         }
-      } catch (err: any) {
-         if (err?.name === 'AbortError' || err?.message?.includes('Lock')) {
-            console.warn("Init auth aborted (lock conflict):", err);
-         } else {
-            console.error("Init auth error:", err);
-         }
-      } finally {
+
+        // Always set loading false after first event
         setLoading(false);
       }
-    };
+    );
 
-    initAuth();
-
-    // Listen for auth changes (ignoring the initial event as getSession handles it)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'INITIAL_SESSION') return;
-      
-      if (session?.user) {
-        setUser(session.user);
-        await fetchStore(session.user.id);
-      } else {
-        setUser(null);
+    // Safety timeout — if onAuthStateChange never fires (offline/error)
+    // release the loading gate after 3s to prevent infinite spinner
+    const timeout = setTimeout(() => {
+      if (mounted) {
+        setLoading(false);
       }
-      
-      setLoading(false);
-    });
+    }, 3000);
 
     return () => {
       mounted = false;
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, [setUser, setLoading, fetchStore]);

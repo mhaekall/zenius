@@ -10,17 +10,17 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses = {
-  primary: 'bg-gray-900 hover:bg-black text-white shadow-sm',
-  secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-800',
-  ghost: 'hover:bg-gray-100 text-gray-700',
+  primary: 'bg-[#1C1917] hover:bg-[#0C0A09] text-white shadow-ios-sm active:scale-[0.97] transition-transform',
+  secondary: 'bg-[#EEECEA] hover:bg-[#E8E6E1] text-[#1C1917]',
+  ghost: 'hover:bg-[#F5F4F0] text-[#78716C]',
   danger: 'bg-red-500 hover:bg-red-600 text-white',
-  outline: 'border border-gray-300 hover:bg-gray-50 text-gray-700 bg-white',
+  outline: 'border border-[#E8E6E1] hover:bg-[#F5F4F0] text-[#1C1917] bg-[#FAFAF8]',
 };
 
 const sizeClasses = {
   sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-sm',
-  lg: 'px-6 py-3 text-base',
+  md: 'px-4 py-2.5 text-sm font-semibold',
+  lg: 'px-6 py-3.5 text-base font-semibold',
 };
 
 export function Button({
@@ -35,7 +35,7 @@ export function Button({
   return (
     <button
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2',
+        'inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2',
         variantClasses[variant],
         sizeClasses[size],
         className
@@ -74,8 +74,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           className={cn(
-            'w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition-colors duration-200',
-            'focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent',
+            'w-full rounded-[14px] border-0 bg-[#EEECEA] px-3.5 py-3 text-sm text-[#1C1917] placeholder:text-[#A8A29E] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-[#E8E6E1]',
             error && 'border-red-400 focus:ring-red-400',            className
           )}
           {...props}
@@ -109,7 +108,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           rows={3}
           className={cn(
             'w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition-colors',
-            'focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none',
+            'focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none',
             error && 'border-red-400 focus:ring-red-400',
             className
           )}
@@ -133,7 +132,7 @@ export function Card({ children, className, onClick }: CardProps) {
     <div
       onClick={onClick}
       className={cn(
-        'bg-white rounded-2xl border border-gray-100 shadow-sm',
+        'bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] shadow-ios-sm',
         onClick && 'cursor-pointer hover:shadow-md transition-shadow',
         className
       )}
@@ -145,7 +144,7 @@ export function Card({ children, className, onClick }: CardProps) {
 
 interface BadgeProps {
   children: React.ReactNode;
-  variant?: 'green' | 'red' | 'gray' | 'violet';
+  variant?: 'green' | 'red' | 'gray' | 'amber';
 }
 
 export function Badge({ children, variant = 'gray' }: BadgeProps) {
@@ -153,7 +152,7 @@ export function Badge({ children, variant = 'gray' }: BadgeProps) {
     green: 'bg-green-100 text-green-700',
     red: 'bg-red-100 text-red-600',
     gray: 'bg-gray-100 text-gray-600',
-    violet: 'bg-violet-100 text-violet-700',
+    amber: 'bg-amber-100 text-amber-700',
   };
   return (
     <span className={cn('inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium', colors[variant])}>
@@ -188,9 +187,9 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 35 }}
         className={cn(
-          'relative bg-white w-full h-[92vh] sm:h-auto sm:max-w-md rounded-t-[2.5rem] sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-gray-100',
+          'relative bg-[#FAFAF8] w-full h-[92vh] sm:h-auto sm:max-w-md rounded-t-[28px] sm:rounded-[28px] shadow-2xl overflow-hidden flex flex-col',
           className
         )}
       >
@@ -218,7 +217,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
 
 export function Spinner({ className }: { className?: string }) {
   return (
-    <svg className={cn('animate-spin h-5 w-5 text-violet-600', className)} fill="none" viewBox="0 0 24 24">
+    <svg className={cn('animate-spin h-5 w-5 text-amber-600', className)} fill="none" viewBox="0 0 24 24">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
     </svg>

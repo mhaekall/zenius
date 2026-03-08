@@ -1,173 +1,162 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { QrCode, Zap, Store, Smartphone, ArrowRight, CheckCircle } from 'lucide-react';
+import { Store, QrCode, Smartphone, ArrowRight, Package } from 'lucide-react';
 import { Button } from '../components/ui';
 
 const features = [
   { icon: Store, title: 'Buat Toko', desc: 'Daftar gratis dan setup toko dalam 2 menit' },
-  { icon: Zap, title: 'Upload Produk', desc: 'Tambah foto, harga, dan deskripsi dengan mudah' },
-  { icon: QrCode, title: 'Bagikan QR', desc: 'Cetak QR Code dan pelanggan langsung bisa akses' },
-];
-
-const benefits = [
-  'Tanpa biaya cetak menu fisik',
-  'Update produk kapan saja',
-  'Pesanan langsung ke WhatsApp',
-  'Tampilan modern & estetik',
-  'Tanpa download aplikasi',
-  'Gratis untuk memulai',
+  { icon: Package, title: 'Upload Produk', desc: 'Tambah foto, harga, dan deskripsi' },
+  { icon: QrCode, title: 'Bagikan QR', desc: 'Cetak QR Code dan pelanggan bisa langsung pesan' },
 ];
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-white">
-      {/* Nav */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+    <div className="min-h-screen bg-[#FAFAF8] text-[#1C1917]">
+      {/* 1. Nav */}
+      <nav className="sticky top-0 z-50 bg-[#FAFAF8]/80 backdrop-blur-xl border-b border-black/[0.04]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <Store className="w-3.5 h-3.5 text-white" />
+            <div className="w-8 h-8 bg-gradient-to-br from-[#F59E0B] to-amber-600 rounded-[10px] flex items-center justify-center shadow-sm">
+              <Store className="w-4 h-4 text-white" />
             </div>
-            <span className="font-bold text-gray-900">Zenius</span>
+            <span className="font-bold text-[#1C1917] tracking-tight">OpenMenu</span>
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/login" className="text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium">
+            <Link to="/login" className="text-sm text-[#78716C] hover:text-[#1C1917] transition-colors font-medium">
               Masuk
             </Link>
             <Link to="/register">
-              <Button size="sm">Daftar Gratis</Button>
+              <Button size="sm" className="shadow-ios-sm">Daftar Gratis</Button>
             </Link>
           </div>
         </div>
       </nav>
 
-      {/* Hero */}
+      {/* 2. Hero + Mockup */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-20 pb-16 text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ type: "spring", stiffness: 400, damping: 30 }}
         >
-          <span className="inline-flex items-center gap-1.5 bg-violet-50 text-violet-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
-            <Smartphone className="w-3 h-3" /> Khusus untuk UMKM Indonesia
+          <span className="inline-flex items-center gap-1.5 bg-[#FEF3C7] text-amber-700 text-xs font-bold px-3 py-1.5 rounded-full mb-6 shadow-sm border border-amber-200">
+            <Smartphone className="w-3.5 h-3.5" /> Tanpa Download Aplikasi
           </span>
-          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 leading-tight mb-5">
+          <h1 className="text-4xl sm:text-6xl font-extrabold text-[#1C1917] leading-tight mb-5 tracking-tight">
             Katalog Digital{' '}
-            <span className="bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+            <span className="text-[#F59E0B]">
               Berbasis QR Code
             </span>
-            <br />untuk Bisnis Kamu
           </h1>
-          <p className="text-lg text-gray-500 max-w-xl mx-auto mb-8">
-            Buat menu atau katalog digital dalam hitungan menit. Pelanggan cukup scan QR Code — langsung muncul di ponsel, tanpa install aplikasi.
+          <p className="text-lg text-[#78716C] max-w-xl mx-auto mb-10">
+            Pelanggan cukup scan barcode di meja, menu langsung muncul di HP. Pesanan otomatis masuk ke WhatsApp Anda.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link to="/register">
-              <Button size="lg" className="gap-2">
-                Mulai Gratis Sekarang <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
-            <Link to="/demo">
-              <Button variant="outline" size="lg">
-                Lihat Demo Katalog
+              <Button size="lg" className="gap-2 shadow-ios-md py-4 text-base">
+                Mulai Buat Menu <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
           </div>
         </motion.div>
 
-        {/* Hero preview card */}
+        {/* Warm iOS Phone Mockup */}
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mt-14 relative"
+          transition={{ type: "spring", stiffness: 300, damping: 35, delay: 0.1 }}
+          className="mt-16 relative max-w-[280px] mx-auto"
         >
-          <div className="absolute inset-0 bg-gradient-to-b from-violet-100/50 to-transparent rounded-3xl" />
-          <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-3xl p-8 border border-violet-100">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-lg mx-auto">
-              {[
-                { name: 'Kopi Susu', price: 'Rp 18.000', color: 'bg-amber-100' },
-                { name: 'Matcha Latte', price: 'Rp 22.000', color: 'bg-green-100' },
-                { name: 'Es Teh Manis', price: 'Rp 8.000', color: 'bg-blue-100' },
-              ].map((item) => (
-                <div key={item.name} className="bg-white rounded-2xl p-3 shadow-sm">
-                  <div className={`${item.color} rounded-xl h-20 mb-2`} />
-                  <p className="text-xs font-semibold text-gray-800">{item.name}</p>
-                  <p className="text-xs text-violet-600 font-bold">{item.price}</p>
+          <div className="absolute inset-0 bg-[#F59E0B] opacity-10 blur-3xl rounded-full" />
+          <div className="relative bg-[#FAFAF8] rounded-[44px] p-3 shadow-2xl border-4 border-[#E8E6E1]">
+            <div className="bg-[#F5F4F0] rounded-[36px] overflow-hidden border border-black/[0.04] h-[500px] flex flex-col relative">
+              {/* Fake Notch */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-[#E8E6E1] rounded-b-xl z-10" />
+              
+              {/* Mockup Content */}
+              <div className="pt-10 px-4 pb-4 flex-1">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-[#F59E0B] rounded-[10px]" />
+                  <div>
+                    <div className="w-24 h-4 bg-[#E8E6E1] rounded mb-1" />
+                    <div className="w-16 h-3 bg-[#E8E6E1] rounded" />
+                  </div>
                 </div>
-              ))}
+                
+                <div className="flex gap-2 mb-4">
+                  <div className="w-16 h-6 bg-[#1C1917] rounded-full" />
+                  <div className="w-16 h-6 bg-[#EEECEA] rounded-full" />
+                  <div className="w-16 h-6 bg-[#EEECEA] rounded-full" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="bg-white rounded-[14px] p-2 shadow-sm border border-black/[0.04]">
+                      <div className="aspect-square bg-[#EEECEA] rounded-[10px] mb-2" />
+                      <div className="w-full h-3 bg-[#E8E6E1] rounded mb-1.5" />
+                      <div className="w-1/2 h-3 bg-[#F59E0B] opacity-50 rounded" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Fake FAB */}
+              <div className="absolute bottom-4 left-4 right-4 h-12 bg-[#1C1917] rounded-full shadow-lg opacity-90" />
             </div>
           </div>
         </motion.div>
       </section>
 
-      {/* Features / Steps */}
-      <section className="bg-gray-50 py-16">
+      {/* 3. Steps */}
+      <section className="bg-[#F5F4F0] py-20 border-t border-black/[0.04]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-3">
-            Mulai dalam 3 Langkah
-          </h2>
-          <p className="text-gray-500 text-center mb-10">Semua bisa dilakukan tanpa keahlian teknis apapun</p>
+          <div className="text-center mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#1C1917] mb-2">
+              Super Simpel
+            </h2>
+            <p className="text-[#78716C]">Siap jualan dalam 3 langkah mudah</p>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {features.map((f, i) => (
-              <motion.div
+              <div
                 key={f.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                viewport={{ once: true }}
-                className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
+                className="bg-[#FAFAF8] rounded-[24px] p-6 shadow-ios-sm border border-black/[0.04]"
               >
-                <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center mb-4">
-                  <f.icon className="w-5 h-5 text-violet-600" />
+                <div className="w-12 h-12 bg-[#FEF3C7] rounded-[14px] flex items-center justify-center mb-5 border border-amber-100">
+                  <f.icon className="w-6 h-6 text-[#F59E0B]" />
                 </div>
-                <div className="text-xs font-bold text-violet-500 mb-1">Langkah {i + 1}</div>
-                <h3 className="font-semibold text-gray-900 mb-2">{f.title}</h3>
-                <p className="text-sm text-gray-500">{f.desc}</p>
-              </motion.div>
+                <div className="text-xs font-bold text-[#A8A29E] uppercase tracking-widest mb-2">Langkah {i + 1}</div>
+                <h3 className="font-bold text-[#1C1917] text-lg mb-2">{f.title}</h3>
+                <p className="text-sm text-[#78716C] leading-relaxed">{f.desc}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Benefits */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-16">
-        <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-10">
-          Kenapa Pilih Zenius?
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {benefits.map((b) => (
-            <div key={b} className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100">
-              <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-              <span className="text-sm text-gray-700">{b}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="bg-gradient-to-br from-violet-600 to-purple-700 py-16">
+      {/* 4. CTA */}
+      <section className="py-20 border-t border-black/[0.04]">
         <div className="max-w-2xl mx-auto px-4 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
-            Siap Buat Katalog Digital Kamu?
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#1C1917] mb-4">
+            Tinggalkan Menu Kertas Kusam
           </h2>
-          <p className="text-violet-200 mb-8">Gratis selamanya untuk UMKM. Tidak perlu kartu kredit.</p>
+          <p className="text-[#78716C] mb-8 text-lg">Bikin toko terlihat lebih profesional dan hemat biaya cetak sekarang juga.</p>
           <Link to="/register">
-            <Button size="lg" variant="secondary" className="font-semibold">
-              Daftar Sekarang — Gratis!
+            <Button size="lg" className="shadow-ios-md py-4 text-base px-8">
+              Coba Gratis Selamanya
             </Button>
           </Link>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-100 py-8">
+      {/* 5. Footer */}
+      <footer className="bg-[#EEECEA] py-8">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg" />
-            <span className="text-sm font-semibold text-gray-900">Zenius</span>
+            <Store className="w-5 h-5 text-[#A8A29E]" />
+            <span className="text-sm font-bold text-[#78716C]">OpenMenu</span>
           </div>
-          <p className="text-xs text-gray-400">© 2026 Zenius. Dibuat dengan ❤️ untuk UMKM Indonesia.</p>
+          <p className="text-xs text-[#A8A29E]">© 2026 OpenMenu. Didesain dengan hangat untuk UMKM Indonesia.</p>
         </div>
       </footer>
     </div>
