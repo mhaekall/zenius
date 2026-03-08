@@ -35,16 +35,25 @@ export default function Products() {
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  // FIX: Track is_available manually karena checkbox HTML tidak reliable dengan react-hook-form boolean
+  const [isAvailable, setIsAvailable] = useState(true);
 
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
-  } = useForm<ProductFormData>({ resolver: zodResolver(productSchema) });
+  } = useForm<ProductFormData>({ 
+    resolver: zodResolver(productSchema),
+    defaultValues: {
+      is_available: true,
+    }
+  });
 
   const fetchProducts = async () => {
     if (!store) return;
+    setLoading(true); // FIX: Selalu set loading true saat mulai fetch
     const { data } = await supabase
       .from('products')
       .select('*')
@@ -55,7 +64,17 @@ export default function Products() {
   };
 
   useEffect(() => {
-    fetchProducts();
+    // FIX: Jika store belum ada (sedang rehydrate dari localStorage), tunggu dulu
+    // Jika store null dan authStore sudah selesai loading, baru set loading false
+    if (store) {
+      fetchProducts();
+    } else {
+      // Berikan grace period singkat untuk Zustand rehydrate
+      const timer = setTimeout(() => {
+        if (!store) setLoading(false);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
   }, [store]);
 
   useEffect(() => {
@@ -70,6 +89,7 @@ export default function Products() {
     setEditProduct(null);
     setImageFile(null);
     setImagePreview(null);
+    setIsAvailable(true); // FIX: Reset state manual
     reset({ name: '', description: '', price: 0, category: 'Lainnya', is_available: true });
     setModalOpen(true);
   };
@@ -78,6 +98,7 @@ export default function Products() {
     setEditProduct(product);
     setImageFile(null);
     setImagePreview(product.image_url);
+    setIsAvailable(product.is_available); // FIX: Sync state manual dengan data produk
     reset({
       name: product.name,
       description: product.description || '',
@@ -111,6 +132,9 @@ export default function Products() {
   const onSubmit = async (data: ProductFormData) => {
     if (!store) return;
 
+    // FIX: Gunakan state is_available yang dikelola manual, bukan dari form
+    const finalData = { ...data, is_available: isAvailable };
+
     let image_url = editProduct?.image_url || null;
 
     if (imageFile) {
@@ -134,7 +158,7 @@ export default function Products() {
     if (editProduct) {
       const { error } = await supabase
         .from('products')
-        .update({ ...data, image_url, updated_at: new Date().toISOString() })
+        .update({ ...finalData, image_url, updated_at: new Date().toISOString() })
         .eq('id', editProduct.id);
         
       if (error) {
@@ -144,7 +168,7 @@ export default function Products() {
       toast.success('Produk diperbarui!');
     } else {
       const { error } = await supabase.from('products').insert({
-        ...data,
+        ...finalData,
         store_id: store.id,
         image_url,
         sort_order: products.length,
@@ -350,15 +374,27 @@ export default function Products() {
                 <Textarea label="Deskripsi Singkat" placeholder="Ceritakan rasa atau keunikan produk ini..." {...register('description')} />
               </div>
 
+              {/* FIX: Toggle is_available dikelola dengan state manual, bukan register */}
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
                 <div>
                   <p className="text-sm font-bold text-gray-900">Status Stok</p>
                   <p className="text-xs text-gray-500">Tampilkan produk di katalog</p>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" {...register('is_available')} className="sr-only peer" />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-black"></div>
-                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsAvailable(!isAvailable)}
+                  className={cn(
+                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200",
+                    isAvailable ? "bg-black" : "bg-gray-200"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "inline-block h-5 w-5 transform rounded-full bg-white border border-gray-300 transition-transform duration-200 shadow-sm",
+                      isAvailable ? "translate-x-5" : "translate-x-0.5"
+                    )}
+                  />
+                </button>
               </div>
 
               <div className="pt-2">
