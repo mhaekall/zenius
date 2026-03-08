@@ -1,0 +1,32 @@
+name: Deploy Supabase Edge Functions
+
+on:
+  push:
+    branches:
+      - main
+    # Hanya jalankan action ini jika ada perubahan di dalam folder supabase/functions/
+    paths:
+      - 'supabase/functions/**'
+  
+  # Tombol manual agar Anda bisa menjalankan deploy kapan saja dari GitHub
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_ID: "lgbfrkenyxnrzycggjov"
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy Edge Function
+        run: supabase functions deploy og-proxy --project-ref $PROJECT_ID

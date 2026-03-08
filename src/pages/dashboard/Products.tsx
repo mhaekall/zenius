@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Pencil, Trash2, Package, ToggleLeft, ToggleRight, Search } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -25,6 +26,7 @@ const CATEGORIES = ['Makanan', 'Minuman', 'Cemilan', 'Paket', 'Lainnya'];
 
 export default function Products() {
   const { store } = useAuthStore();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,6 +57,14 @@ export default function Products() {
   useEffect(() => {
     fetchProducts();
   }, [store]);
+
+  useEffect(() => {
+    if (searchParams.get('add') === 'true') {
+      openAdd();
+      searchParams.delete('add');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const openAdd = () => {
     setEditProduct(null);

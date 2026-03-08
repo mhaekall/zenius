@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard,
@@ -19,6 +19,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children, activeHref }: DashboardLayoutProps) {
   const { store } = useAuthStore();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navItems = [
     { icon: LayoutDashboard, label: 'Beranda', href: '/dashboard' },
     { icon: Package, label: 'Produk', href: '/dashboard/products' },
@@ -56,12 +57,7 @@ export function DashboardLayout({ children, activeHref }: DashboardLayoutProps) 
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             onClick={() => {
-              // We use search params to trigger the modal in the Products page
-              const url = new URL(window.location.href);
-              url.searchParams.set('add', 'true');
-              window.history.replaceState(null, '', url);
-              // Trigger a re-render by navigating
-              window.dispatchEvent(new PopStateEvent('popstate'));
+              setSearchParams({ add: 'true' });
             }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.9 }}
