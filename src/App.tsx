@@ -79,15 +79,26 @@ function AuthInit({ children }: { children: React.ReactNode }) {
 
     const initAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+           console.error("Supabase auth error:", error);
+           setUser(null);
+           return;
+        }
+
         if (session?.user) {
           setUser(session.user);
           await fetchStore(session.user.id);
         } else {
           setUser(null);
         }
+      } catch (err) {
+         console.error("Init auth error:", err);
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -95,6 +106,8 @@ function AuthInit({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes (ignoring the initial event as getSession handles it)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      
       if (event === 'INITIAL_SESSION') return;
       
       if (session?.user) {
@@ -102,6 +115,10 @@ function AuthInit({ children }: { children: React.ReactNode }) {
         await fetchStore(session.user.id);
       } else {
         setUser(null);
+      }
+      
+      if (mounted) {
+         setLoading(false);
       }
     });
 

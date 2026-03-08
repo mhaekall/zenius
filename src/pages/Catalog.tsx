@@ -25,41 +25,45 @@ export default function Catalog() {
     if (!slug) return;
 
     const fetchStoreAndProducts = async () => {
-      // Combined query: fetch store with its products in one go
-      const { data: storeData, error } = await supabase
-        .from('stores')
-        .select(`
-          *,
-          products (*)
-        `)
-        .eq('slug', slug)
-        .eq('is_active', true)
-        .single();
+      try {
+        // Combined query: fetch store with its products in one go
+        const { data: storeData, error } = await supabase
+          .from('stores')
+          .select(`
+            *,
+            products (*)
+          `)
+          .eq('slug', slug)
+          .eq('is_active', true)
+          .single();
 
-      if (error || !storeData) {
+        if (error || !storeData) {
+          setNotFound(true);
+          return;
+        }
+
+        setStore(storeData as Store);
+        
+        // Data is already there from the join
+        if (storeData.products) {
+          const sortedProducts = (storeData.products as Product[]).filter(p => p.is_available).sort((a, b) => a.sort_order - b.sort_order);
+          setProducts(sortedProducts);
+          const cats = ['Semua', ...new Set(sortedProducts.map((p) => p.category))];
+          setCategories(cats);
+        }
+
+        // Async: track page view without blocking
+        supabase.from('analytics_events').insert({
+          store_id: storeData.id,
+          event_type: 'page_view',
+          referrer: document.referrer || null,
+        });
+      } catch (err) {
+        console.error("Error fetching catalog:", err);
         setNotFound(true);
+      } finally {
         setLoading(false);
-        return;
       }
-
-      setStore(storeData as Store);
-      
-      // Data is already there from the join
-      if (storeData.products) {
-        const sortedProducts = (storeData.products as Product[]).filter(p => p.is_available).sort((a, b) => a.sort_order - b.sort_order);
-        setProducts(sortedProducts);
-        const cats = ['Semua', ...new Set(sortedProducts.map((p) => p.category))];
-        setCategories(cats);
-      }
-
-      // Async: track page view without blocking
-      supabase.from('analytics_events').insert({
-        store_id: storeData.id,
-        event_type: 'page_view',
-        referrer: document.referrer || null,
-      });
-
-      setLoading(false);
     };
 
     fetchStoreAndProducts();
