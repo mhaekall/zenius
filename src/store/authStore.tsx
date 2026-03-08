@@ -32,13 +32,21 @@ export const useAuthStore = create<AuthState>()(
       },
 
       fetchStore: async (userId: string) => {
-        const { data, error } = await supabase
-          .from('stores')
-          .select('*')
-          .eq('owner_id', userId)
-          .single();
-        if (!error && data) {
-          set({ store: data as Store });
+        try {
+          const { data, error } = await supabase
+            .from('stores')
+            .select('*')
+            .eq('owner_id', userId)
+            .single();
+          if (!error && data) {
+            set({ store: data as Store });
+          } else {
+             // Pastikan store null jika tidak ditemukan atau error
+             set({ store: null });
+          }
+        } catch (err) {
+          console.error("Gagal mengambil data toko:", err);
+          set({ store: null });
         }
       },
     }),

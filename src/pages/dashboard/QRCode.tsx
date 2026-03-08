@@ -2,8 +2,6 @@ import { useRef, useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Download, ExternalLink, Share2, Palette, Image as ImageIcon, FileText } from 'lucide-react';
 import { toBlob } from 'html-to-image';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/authStore';
 import { Button, Card, Input } from '../../components/ui';
@@ -65,6 +63,12 @@ export default function QRCodePage() {
     const toastId = toast.loading('Membuat desain poster PDF...');
     
     try {
+      // Lazy load heavy libraries only when needed
+      const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+        import('jspdf'),
+        import('html2canvas'),
+      ]);
+
       // Pastikan elemen poster ditampilkan sementara untuk di-render canvas
       pdfRef.current.style.display = 'flex';
       

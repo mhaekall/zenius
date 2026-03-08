@@ -94,8 +94,12 @@ function AuthInit({ children }: { children: React.ReactNode }) {
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-           console.error("Supabase auth error:", error);
-           setUser(null);
+           if (error.name === 'AuthRetryableFetchError' || error.message.includes('Lock') || error.name === 'AbortError') {
+             console.warn("Ignored Supabase auth lock/fetch conflict:", error);
+           } else {
+             console.error("Supabase auth error:", error);
+             setUser(null);
+           }
            return;
         }
 
@@ -105,12 +109,14 @@ function AuthInit({ children }: { children: React.ReactNode }) {
         } else {
           setUser(null);
         }
-      } catch (err) {
-         console.error("Init auth error:", err);
+      } catch (err: any) {
+         if (err?.name === 'AbortError' || err?.message?.includes('Lock')) {
+            console.warn("Init auth aborted (lock conflict):", err);
+         } else {
+            console.error("Init auth error:", err);
+         }
       } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
 
@@ -118,8 +124,6 @@ function AuthInit({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes (ignoring the initial event as getSession handles it)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
-      
       if (event === 'INITIAL_SESSION') return;
       
       if (session?.user) {
@@ -129,9 +133,7 @@ function AuthInit({ children }: { children: React.ReactNode }) {
         setUser(null);
       }
       
-      if (mounted) {
-         setLoading(false);
-      }
+      setLoading(false);
     });
 
     return () => {
