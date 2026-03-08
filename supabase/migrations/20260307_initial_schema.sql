@@ -58,8 +58,12 @@ ALTER TABLE analytics_events ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Owners can manage own store" ON stores
   FOR ALL USING (auth.uid() = owner_id);
 
+-- Kita perbaiki agar public hanya bisa melihat data jika is_active = true, tetapi owner tidak dibatasi.
+-- Secara teknis, di Supabase/Postgres multiple SELECT policies saling meng-OR-kan dirinya.
+-- Jika dua kebijakan "SELECT" ada, jika salah satu benar maka baris tersebut akan terlihat.
+-- "Owners can manage own store" sudah mencakup hak SELECT untuk data miliknya sendiri.
 CREATE POLICY "Public can read active stores" ON stores
-  FOR SELECT USING (is_active = true);
+  FOR SELECT USING (is_active = true OR auth.uid() = owner_id);
 
 -- Products Policies
 CREATE POLICY "Owners can manage own products" ON products
@@ -70,7 +74,7 @@ CREATE POLICY "Owners can manage own products" ON products
 CREATE POLICY "Public can read available products" ON products
   FOR SELECT USING (
     is_available = true AND
-    EXISTS (SELECT 1 FROM stores WHERE stores.id = store_id AND stores.is_active = true)
+    EXISTS (SELECT 1 FROM stores WHERE stores.id = store_id AND (stores.is_active = true OR stores.owner_id = auth.uid()))
   );
 
 -- Analytics Policies
