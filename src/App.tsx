@@ -10,13 +10,25 @@ import { DashboardLayout } from './components/layout/DashboardLayout';
 import Landing from './pages/Landing';
 import Catalog from './pages/Catalog';
 
+// Custom lazy function to auto-reload if chunks are outdated (Vite PWA issue)
+const lazyWithRetry = (componentImport: () => Promise<any>) =>
+  lazy(async () => {
+    try {
+      return await componentImport();
+    } catch (error) {
+      console.error('Chunk loading failed, forcefully reloading...', error);
+      window.location.reload();
+      return { default: () => <PageLoader /> };
+    }
+  });
+
 // Lazy loaded pages (Code Splitting)
-const Login = lazy(() => import('./pages/Login'));
-const Register = lazy(() => import('./pages/Register'));
-const Overview = lazy(() => import('./pages/dashboard/Overview'));
-const Products = lazy(() => import('./pages/dashboard/Products'));
-const Settings = lazy(() => import('./pages/dashboard/Settings'));
-const QRCodePage = lazy(() => import('./pages/dashboard/QRCode'));
+const Login = lazyWithRetry(() => import('./pages/Login'));
+const Register = lazyWithRetry(() => import('./pages/Register'));
+const Overview = lazyWithRetry(() => import('./pages/dashboard/Overview'));
+const Products = lazyWithRetry(() => import('./pages/dashboard/Products'));
+const Settings = lazyWithRetry(() => import('./pages/dashboard/Settings'));
+const QRCodePage = lazyWithRetry(() => import('./pages/dashboard/QRCode'));
 
 // Performance-friendly Loading Spinner
 const PageLoader = () => (
