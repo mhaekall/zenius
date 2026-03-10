@@ -1,12 +1,14 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
-import { visualizer } from 'rollup-plugin-visualizer';
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
+    // SSG disabled - uncomment when plugin is compatible with Vite 7
+    // import { ssgPlugin } from 'vite-plugin-ssg';
+    // ssgPlugin({ pages: ['/', '/login', '/register', '/dashboard', '/c/:slug'] })
     VitePWA({
       disable: true,
       registerType: 'autoUpdate',
@@ -34,15 +36,9 @@ export default defineConfig({
         ]
       },
       devOptions: {
-        enabled: false // Matikan di dev mode untuk menghemat RAM di Termux
+        enabled: false
       }
     }),
-    visualizer({
-      filename: 'bundle-stats.html',
-      open: false,
-      gzipSize: true,
-      brotliSize: true,
-    })
   ],
   build: {
     rollupOptions: {

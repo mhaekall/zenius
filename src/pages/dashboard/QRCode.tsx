@@ -7,6 +7,40 @@ import { useAuthStore } from '../../store/authStore';
 import { Button, Input } from '../../components/ui';
 import { cn } from '../../lib/utils';
 
+// Robust clipboard copy function that works in all contexts
+const copyToClipboard = async (text: string): Promise<boolean> => {
+  // Try navigator.clipboard first
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Fall through to fallback
+    }
+  }
+  
+  // Fallback: use textarea element method
+  return new Promise((resolve) => {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    textarea.style.top = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    
+    try {
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      resolve(successful);
+    } catch {
+      document.body.removeChild(textarea);
+      resolve(false);
+    }
+  });
+};
+
 export default function QRCodePage() {
   const { store } = useAuthStore();
   const qrRef = useRef<HTMLDivElement>(null);
@@ -94,11 +128,30 @@ export default function QRCodePage() {
   };
 
   const shareQR = async () => {
+    // Try native share first
     if (navigator.share) {
-      await navigator.share({ title: store.name, text: 'Lihat katalog saya!', url: catalogUrl });
-    } else {
-      navigator.clipboard.writeText(catalogUrl);
+      try {
+        await navigator.share({ 
+          title: `${store.name} - Katalog Digital`, 
+          text: `Lihat katalog ${store.name} di OpenMenu!`, 
+          url: catalogUrl 
+        });
+        return; // Share successful
+      } catch (error) {
+        // User cancelled - don't do anything
+        if (error instanceof Error && error.name === 'AbortError') {
+          return;
+        }
+        // Other error - fall through to clipboard
+      }
+    }
+    
+    // Fallback: use robust clipboard copy
+    const success = await copyToClipboard(catalogUrl);
+    if (success) {
       toast.success('Link disalin ke clipboard!');
+    } else {
+      toast.error('Gagal menyalin link');
     }
   };
 

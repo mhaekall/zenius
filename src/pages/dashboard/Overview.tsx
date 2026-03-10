@@ -116,7 +116,10 @@ export default function Overview() {
   const [totalProducts, setTotalProducts] = useState(0);
 
   useEffect(() => {
-    if (!store) return;
+    if (!store) {
+      setLoading(false);
+      return;
+    }
 
     supabase
       .from('products')
@@ -160,6 +163,7 @@ export default function Overview() {
   if (loading) return <OverviewSkeleton />;
 
   if (!store) {
+    // Return early but set loading false to be safe in case component renders while store is still null but fetch is done
     return (
       <div className="max-w-md mx-auto mt-16 text-center">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>

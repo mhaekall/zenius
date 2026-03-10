@@ -68,21 +68,25 @@ function DashboardWrapper() {
   
   return (
     <DashboardLayout activeHref={location.pathname}>
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={location.pathname}
-          initial={{ opacity: 0, x: 8 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -8 }}
-          transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }} // Snappy Apple-style easing
-          className="w-full"
-        >
-          {/* Ensure the lazy Suspense is inside the animated div */}
-          <Suspense fallback={<div className="flex items-center justify-center min-h-[50vh]"><div className="w-6 h-6 border-2 border-gray-200 border-t-black rounded-full animate-spin" /></div>}>
+      {/* Suspense di luar AnimatePresence agar tidak remount setiap transisi */}
+      <Suspense fallback={
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="w-6 h-6 border-2 border-[#E8E6E1] border-t-black rounded-full animate-spin" />
+        </div>
+      }>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, x: 8 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -8 }}
+            transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }} // Snappy Apple-style easing
+            className="w-full"
+          >
             {outlet}
-          </Suspense>
-        </motion.div>
-      </AnimatePresence>
+          </motion.div>
+        </AnimatePresence>
+      </Suspense>
     </DashboardLayout>
   );
 }
@@ -94,6 +98,37 @@ function AuthInit({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
+    // Explicit session check - langsung cek session tanpa tunggu onAuthStateChange
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+        
+        console.log('[Auth] Initial session check:', session?.user?.email);
+        
+        if (session?.user) {
+          setUser(session.user);
+          const currentStore = useAuthStore.getState().store;
+          if (!currentStore || currentStore.owner_id !== session.user.id) {
+            await fetchStore(session.user.id);
+          }
+        } else {
+          setUser(null);
+          useAuthStore.getState().setStore(null);
+        }
+      } catch (err) {
+        console.error('[Auth] Error getting session:', err);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    // Jalankan initAuth dulu, baru mendengarkan perubahan
+    initAuth();
+
     // Single source of truth: onAuthStateChange handles everything
     // including the initial session check via INITIAL_SESSION event
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -102,11 +137,22 @@ function AuthInit({ children }: { children: React.ReactNode }) {
 
         console.log('[Auth]', event, session?.user?.email);
 
+        // Hindari re-fetch store pada token refresh — tidak perlu
+        if (event === 'TOKEN_REFRESHED') {
+          setLoading(false);
+          return;
+        }
+
         if (session?.user) {
           setUser(session.user);
-          await fetchStore(session.user.id);
+          // fetchStore hanya kalau belum ada store di cache atau beda user
+          const currentStore = useAuthStore.getState().store;
+          if (!currentStore || currentStore.owner_id !== session.user.id) {
+            await fetchStore(session.user.id);
+          }
         } else {
           setUser(null);
+          useAuthStore.getState().setStore(null);
         }
 
         // Always set loading false after first event
@@ -115,19 +161,19 @@ function AuthInit({ children }: { children: React.ReactNode }) {
     );
 
     // Safety timeout — if onAuthStateChange never fires (offline/error)
-    // release the loading gate after 3s to prevent infinite spinner
+    // release the loading gate after 2s to prevent infinite spinner
     const timeout = setTimeout(() => {
       if (mounted) {
         setLoading(false);
       }
-    }, 3000);
+    }, 2000);
 
     return () => {
       mounted = false;
       clearTimeout(timeout);
       subscription.unsubscribe();
     };
-  }, [setUser, setLoading, fetchStore]);
+  }, []); // <-- hapus dependency array agar tidak re-run
 
   return <>{children}</>;
 }

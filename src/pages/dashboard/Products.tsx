@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Pencil, Trash2, Package, ToggleLeft, ToggleRight, Search } from 'lucide-react';
@@ -35,9 +35,23 @@ export default function Products() {
   const [selectedCategory, setSelectedCategory] = useState('Semua');
   const [modalOpen, setModalOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const PRODUCTS_PER_PAGE = 12;
+  const [totalCount, setTotalCount] = useState(0);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isAvailable, setIsAvailable] = useState(true);
+
+  // Cleanup blob URL to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (imagePreview && imagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
 
   const {
     register,
@@ -54,14 +68,48 @@ export default function Products() {
   const fetchProducts = async () => {
     if (!store) return;
     setLoading(true);
-    const { data } = await supabase
+    
+    // First get total count for pagination
+    let query = supabase
+      .from('products')
+      .select('*', { count: 'exact', head: true })
+      .eq('store_id', store.id);
+    
+    if (selectedCategory !== 'Semua') {
+      query = query.eq('category', selectedCategory);
+    }
+    if (searchQuery) {
+      query = query.ilike('name', `%${searchQuery}%`);
+    }
+    
+    const { count } = await query;
+    setTotalCount(count || 0);
+    
+    // Then fetch paginated data
+    const offset = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    let dataQuery = supabase
       .from('products')
       .select('*')
       .eq('store_id', store.id)
-      .order('sort_order');
+      .order('sort_order')
+      .range(offset, offset + PRODUCTS_PER_PAGE - 1);
+    
+    if (selectedCategory !== 'Semua') {
+      dataQuery = dataQuery.eq('category', selectedCategory);
+    }
+    if (searchQuery) {
+      dataQuery = dataQuery.ilike('name', `%${searchQuery}%`);
+    }
+    
+    const { data } = await dataQuery;
     setProducts(data || []);
     setLoading(false);
   };
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory]);
 
   useEffect(() => {
     if (store) {
@@ -72,7 +120,7 @@ export default function Products() {
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [store]);
+  }, [store, currentPage, selectedCategory, searchQuery]);
 
   useEffect(() => {
     if (searchParams.get('add') === 'true') {
@@ -109,6 +157,11 @@ export default function Products() {
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Revoke old URL if exists
+      if (imagePreview && imagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
+      
       const toastId = toast.loading('Mengompres gambar...');
       try {
         const options = {
@@ -264,21 +317,28 @@ export default function Products() {
           <Button size="sm" onClick={openAdd}>Tambah Produk</Button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <AnimatePresence mode="popLayout">
-            {filteredProducts.map((product) => (
-              <motion.div
-                key={product.id}
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ type: "spring", stiffness: 400, damping: 30, mass: 0.8 }}
-              >
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <AnimatePresence mode="popLayout">
+              {filteredProducts.map((product) => (
+                <motion.div
+                  key={product.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30, mass: 0.8 }}
+                >
                 <div className="bg-[#F5F4F0] rounded-[18px] overflow-hidden border border-black/[0.06] shadow-ios-sm h-full flex flex-col">
                   <div className="aspect-[4/3] bg-[#EEECEA] relative">
                     {product.image_url ? (
-                      <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                      <img 
+                        src={product.image_url} 
+                        alt={product.name} 
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        decoding="async"
+                      />
                     ) : (
                       <ProductPlaceholder 
                         name={product.name}
@@ -315,6 +375,30 @@ export default function Products() {
             ))}
           </AnimatePresence>
         </div>
+        
+        {/* Pagination Controls */}
+        {totalCount > PRODUCTS_PER_PAGE && (
+          <div className="flex items-center justify-between mt-6 px-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 rounded-lg bg-[#F5F4F0] text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              ← Sebelumnya
+            </button>
+            <span className="text-sm text-[#78716C]">
+              Halaman {currentPage} dari {Math.ceil(totalCount / PRODUCTS_PER_PAGE)}
+            </span>
+            <button
+              onClick={() => setCurrentPage(p => p + 1)}
+              disabled={currentPage >= Math.ceil(totalCount / PRODUCTS_PER_PAGE)}
+              className="px-4 py-2 rounded-lg bg-[#F5F4F0] text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Berikutnya →
+            </button>
+          </div>
+        )}
+        </>
       )}
 
       {/* Modal Add/Edit */}

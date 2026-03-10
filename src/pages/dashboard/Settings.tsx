@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -17,8 +17,10 @@ const settingsSchema = z.object({
   name: z.string().min(2),
   description: z.string().optional(),
   slug: z.string().min(3).regex(/^[a-z0-9-]+$/, 'Hanya huruf kecil, angka, dan dash'),
-  wa_number: z.string().min(8).regex(/^[0-9]+$/),
-  theme_color: z.string(),
+  wa_number: z.string()
+    .min(8, 'Nomor WhatsApp minimal 8 digit')
+    .regex(/^(0|62)?[0-9]{8,12}$/, 'Format nomor tidak valid (contoh: 628xxxxxxxxxx atau 08xxxxxxxxxx)'),
+  theme_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Format warna tidak valid'),
 });
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
@@ -31,6 +33,17 @@ export default function Settings() {
   const [qrisFile, setQrisFile] = useState<File | null>(null);
   const logoRef = useRef<HTMLInputElement>(null);
   const qrisRef = useRef<HTMLInputElement>(null);
+  // Cleanup blob URLs to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (logoPreview && logoPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(logoPreview);
+      }
+      if (qrisPreview && qrisPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(qrisPreview);
+      }
+    };
+  }, []);
 
   const {
     register,
@@ -52,6 +65,11 @@ export default function Settings() {
   const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Revoke old URL if exists
+      if (logoPreview && logoPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(logoPreview);
+      }
+      
       const toastId = toast.loading('Mengompres logo...');
       try {
         const compressed = await imageCompression(file, { maxSizeMB: 0.2, maxWidthOrHeight: 512 });
@@ -67,6 +85,11 @@ export default function Settings() {
   const handleQrisChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Revoke old URL if exists
+      if (qrisPreview && qrisPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(qrisPreview);
+      }
+      
       const toastId = toast.loading('Mengompres QRIS...');
       try {
         const compressed = await imageCompression(file, { maxSizeMB: 0.3, maxWidthOrHeight: 800 });

@@ -74,6 +74,27 @@ serve(async (req) => {
     });
   }
 
+  // Ambil produk pertama untuk OG image (jika ada)
+  const { data: products } = await supabase
+    .from("products")
+    .select("name, image_url")
+    .eq("store_id", store.id)
+    .eq("is_available", true)
+    .order("sort_order")
+    .limit(1);
+
+  const firstProduct = products?.[0];
+  const ogImage = firstProduct?.image_url || store.logo_url || 'https://via.placeholder.com/1200x630.png?text=Katalog+Digital';
+
+  // Ambil jumlah produk untuk description
+  const { count: productCount } = await supabase
+    .from("products")
+    .select("*", { count: 'exact', head: true })
+    .eq("store_id", store.id)
+    .eq("is_available", true);
+
+  const description = store.description || `${productCount || 0} produk tersedia. Pesan langsung via WhatsApp!`;
+
   // Buat HTML khusus untuk Bot WhatsApp/FB dengan Meta Tags Dinamis
   const botHtml = `
     <!DOCTYPE html>
@@ -86,15 +107,15 @@ serve(async (req) => {
         <meta property="og:type" content="website" />
         <meta property="og:url" content="${APP_URL}${path}" />
         <meta property="og:title" content="${store.name} | Katalog Digital" />
-        <meta property="og:description" content="${store.description || `Lihat menu dan pesan langsung dari ${store.name}.`}" />
-        <meta property="og:image" content="${store.logo_url || 'https://via.placeholder.com/1200x630.png?text=Tidak+Ada+Logo'}" />
+        <meta property="og:description" content="${description}" />
+        <meta property="og:image" content="${ogImage}" />
         
         <!-- Twitter -->
         <meta property="twitter:card" content="summary_large_image" />
         <meta property="twitter:url" content="${APP_URL}${path}" />
         <meta property="twitter:title" content="${store.name} | Katalog Digital" />
-        <meta property="twitter:description" content="${store.description || `Lihat menu dan pesan langsung dari ${store.name}.`}" />
-        <meta property="twitter:image" content="${store.logo_url || 'https://via.placeholder.com/1200x630.png?text=Tidak+Ada+Logo'}" />
+        <meta property="twitter:description" content="${description}" />
+        <meta property="twitter:image" content="${ogImage}" />
       </head>
       <body>
         <h1>${store.name}</h1>
