@@ -37,6 +37,8 @@ export default function Login() {
     });
 
     if (authError) {
+      // Don't expose raw error messages - log for debugging, show generic message
+      console.error('Login error:', authError.message);
       setError('Email atau password salah. Silakan coba lagi.');
       return;
     }
@@ -57,7 +59,10 @@ export default function Login() {
         redirectTo: `${window.location.origin}/dashboard`,
       },
     });
-    if (error) setError(error.message);
+    if (error) {
+      console.error('Google login error:', error.message);
+      setError('Gagal login dengan Google. Silakan coba lagi.');
+    }
   };
 
   return (

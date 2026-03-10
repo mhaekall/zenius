@@ -12,7 +12,9 @@ import { sanitizeSlug } from '../lib/utils';
 
 const registerSchema = z.object({
   storeName: z.string().min(2, 'Nama toko minimal 2 karakter'),
-  waNumber: z.string().min(8, 'Nomor WhatsApp tidak valid').regex(/^[0-9]+$/, 'Hanya angka'),
+  waNumber: z.string()
+    .min(8, 'Nomor WhatsApp minimal 8 digit')
+    .regex(/^(0|62)?[0-9]{8,12}$/, 'Format nomor tidak valid (contoh: 628xxxxxxxxxx atau 08xxxxxxxxxx)'),
   email: z.string().email('Email tidak valid'),
   password: z.string().min(6, 'Password minimal 6 karakter'),
 });
@@ -44,7 +46,10 @@ export default function Register() {
         redirectTo: `${window.location.origin}/dashboard`,
       },
     });
-    if (error) setError(error.message);
+    if (error) {
+      console.error('Google OAuth error:', error.message);
+      setError('Gagal login dengan Google. Silakan coba lagi.');
+    }
   };
 
   const onSubmit = async (data: RegisterFormData) => {
@@ -57,7 +62,8 @@ export default function Register() {
     });
 
     if (authError) {
-      setError(authError.message);
+      console.error('Auth signup error:', authError.message);
+      setError('Gagal membuat akun. Silakan coba lagi.');
       return;
     }
 
@@ -83,8 +89,8 @@ export default function Register() {
       .single();
 
     if (storeError) {
-      console.error('Store Insert Error:', storeError);
-      setError(`Gagal membuat toko: ${storeError.message}`);
+      console.error('Store Insert Error:', storeError.message);
+      setError('Gagal membuat toko. Silakan coba lagi.');
       return;
     }
 

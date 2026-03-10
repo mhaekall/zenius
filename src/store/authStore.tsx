@@ -28,7 +28,7 @@ export const useAuthStore = create<AuthState>()(
 
       signOut: async () => {
         await supabase.auth.signOut();
-        set({ user: null, store: null });
+        set({ user: null, store: null, loading: false });
       },
 
       fetchStore: async (userId: string) => {
@@ -54,12 +54,8 @@ export const useAuthStore = create<AuthState>()(
       name: 'openmenu-auth',
       partialize: (state) => ({ user: state.user, store: state.store }),
       onRehydrateStorage: () => (state) => {
-        // After rehydration, if we have a user cached,
-        // set loading false optimistically
-        // AuthInit will correct it if session is actually expired
-        if (state?.user) {
-          state.setLoading(false);
-        }
+        // Jangan set loading=false di sini - biarkan AuthInit yang handle
+        // untuk menghindari race condition antara rehydration dan onAuthStateChange
       },
     }
   )

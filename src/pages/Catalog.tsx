@@ -22,8 +22,18 @@ export default function Catalog() {
   const [qrisOpen, setQrisOpen] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
-  const { items, addItem, removeItem, updateQty, clearCart, getTotalItems, getTotalPrice } = useCartStore();
-  const storeSlug = slug || '';
+  // Use specific selectors to prevent unnecessary re-renders
+  const items = useCartStore((state) => state.items);
+  const cartStoreSlug = useCartStore((state) => state.storeSlug);
+  const addItem = useCartStore((state) => state.addItem);
+  const removeItem = useCartStore((state) => state.removeItem);
+  const updateQty = useCartStore((state) => state.updateQty);
+  const clearCart = useCartStore((state) => state.clearCart);
+  const getTotalItems = useCartStore((state) => state.getTotalItems);
+  const getTotalPrice = useCartStore((state) => state.getTotalPrice);
+  
+  // Use slug from URL params, fallback to cart store slug if available
+  const storeSlug = slug || cartStoreSlug || '';
 
   useEffect(() => {
     if (!slug) return;
@@ -98,7 +108,13 @@ export default function Catalog() {
     window.open(url, '_blank');
   };
 
-  const themeColor = store?.theme_color || '#F59E0B';
+  // Validate theme color to prevent XSS
+  const isValidHex = (color: string | null | undefined): boolean => {
+    return /^#[0-9A-Fa-f]{6}$/.test(color || '');
+  };
+  
+  const rawThemeColor = store?.theme_color || '#F59E0B';
+  const themeColor = isValidHex(rawThemeColor) ? rawThemeColor : '#F59E0B';
   const totalItems = getTotalItems();
   const totalPrice = getTotalPrice();
 
@@ -164,6 +180,10 @@ export default function Catalog() {
               text={`Cek katalog ${store.name}! 🛍️`}
               themeColor={themeColor}
               variant="icon"
+              storeName={store.name}
+              storeLogo={store.logo_url || undefined}
+              productCount={products.length}
+              previewImage={products[0]?.image_url || undefined}
             />
             {store.qris_url && (
               <motion.button
