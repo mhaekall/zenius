@@ -27,3 +27,4 @@ dist-ssr
 # Supabase
 .env
 bundle-stats.html
+.env.cloudflare
