@@ -10,7 +10,7 @@ export default defineConfig({
     // import { ssgPlugin } from 'vite-plugin-ssg';
     // ssgPlugin({ pages: ['/', '/login', '/register', '/dashboard', '/c/:slug'] })
     VitePWA({
-      disable: false,
+      disable: true,
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
@@ -37,7 +37,9 @@ export default defineConfig({
       },
       workbox: {
         navigateFallback: '/index.html',
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        sourcemap: false,
+        cleanupOutdatedCaches: true
       },
       devOptions: {
         enabled: true
@@ -53,7 +55,6 @@ export default defineConfig({
           supabase: ['@supabase/supabase-js']
         }
       }
-    },
-    minify: false
+    }
   }
 });
