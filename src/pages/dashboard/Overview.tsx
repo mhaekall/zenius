@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -104,10 +104,12 @@ function generateInsight({
 export default function Overview() {
   const { store } = useAuthStore();
   const navigate = useNavigate();
+  const hasRedirected = useRef(false);
   
   // Safety check: if no store, redirect to register
   useEffect(() => {
-    if (!store) {
+    if (!store && !hasRedirected.current) {
+      hasRedirected.current = true;
       navigate('/register', { replace: true });
     }
   }, [store, navigate]);

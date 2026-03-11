@@ -43,15 +43,19 @@ const PageLoader = () => (
 // Auth guard component - for routes that require authentication
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, store, loading } = useAuthStore();
-
+  const location = useLocation();
+  
   // Show loading while checking auth
   if (loading) return <PageLoader />;
   
   // Not logged in - redirect to login
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
   
   // Logged in but no store - redirect to register to create store
-  if (!store) return <Navigate to="/register" replace />;
+  // Use location to prevent redirect loops
+  if (!store && location.pathname !== '/register') {
+    return <Navigate to="/register" replace />;
+  }
   
   return <>{children}</>;
 }
