@@ -7,7 +7,7 @@
     "dev": "vite",
     "prebuild": "node scripts/extract-meta.js",
     "build": "vite build",
-    "preview": "vite preview",
+    "preview": "pnpm run build && wrangler dev",
     "setup:storage": "node scripts/setup-storage.js",
     "seed": "node scripts/seed.js",
     "log": "node scripts/agent-log.js",
@@ -15,7 +15,8 @@
     "db:sync": "supabase db push && supabase gen types typescript --local > src/types/supabase.ts",
     "db:pull": "supabase db pull",
     "edge:serve": "supabase functions serve og-proxy --env-file ./supabase/.env.local",
-    "edge:deploy": "supabase functions deploy og-proxy"
+    "edge:deploy": "supabase functions deploy og-proxy",
+    "deploy": "pnpm run build && wrangler deploy"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.18",
@@ -43,6 +44,7 @@
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.27.0",
     "@faker-js/faker": "^10.3.0",
     "@types/matter-js": "^0.20.0",
     "@types/node": "^24.0.14",
@@ -59,6 +61,7 @@
     "typescript": "~5.8.3",
     "vite": "^7.0.0",
     "vite-plugin-pwa": "^1.2.0",
-    "vite-plugin-ssg": "^0.1.0"
+    "vite-plugin-ssg": "^0.1.0",
+    "wrangler": "^4.72.0"
   }
 }
