@@ -33,19 +33,35 @@ export const useAuthStore = create<AuthState>()(
 
       fetchStore: async (userId: string) => {
         try {
+          console.log('[fetchStore] Fetching store for user:', userId);
+          
           const { data, error } = await supabase
             .from('stores')
             .select('*')
             .eq('owner_id', userId)
-            .single();
-          if (!error && data) {
+            .maybeSingle();
+          
+          console.log('[fetchStore] Result:', { data, error });
+          
+          if (error) {
+            console.error('[fetchStore] Error:', error.message);
+            // Handle 406 error - usually RLS related
+            if (error.code === '406') {
+              console.error('[fetchStore] 406 Error - Check RLS policies');
+            }
+            set({ store: null });
+            return;
+          }
+          
+          if (data) {
             set({ store: data as Store });
           } else {
-             // Pastikan store null jika tidak ditemukan atau error
-             set({ store: null });
+            // No store found for this user
+            console.log('[fetchStore] No store found for user');
+            set({ store: null });
           }
         } catch (err) {
-          console.error("Gagal mengambil data toko:", err);
+          console.error('[fetchStore] Exception:', err);
           set({ store: null });
         }
       },

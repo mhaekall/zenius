@@ -53,10 +53,14 @@ export default function Login() {
 
   const handleGoogleLogin = async () => {
     setError('');
+    // Use the current origin for redirect - works for both localhost and production domains
+    const redirectTo = `${window.location.origin}/dashboard`;
+    console.log('[Google Login] Redirect URL:', redirectTo);
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/dashboard`,
+        redirectTo,
       },
     });
     if (error) {

@@ -12,6 +12,7 @@ import { useAuthStore } from '../../store/authStore';
 import { cn, formatRupiah } from '../../lib/utils';
 import { OverviewSkeleton } from '../../components/ui/Skeleton';
 import { ProductPlaceholder } from '../../components/ui/ProductPlaceholder';
+import { Button } from '../../components/ui';
 import type { Product } from '../../types';
 
 type Period = 'today' | '7d' | '30d';
@@ -103,6 +104,25 @@ function generateInsight({
 export default function Overview() {
   const { store } = useAuthStore();
   const navigate = useNavigate();
+  
+  // Safety check: if no store, redirect to register
+  useEffect(() => {
+    if (!store) {
+      navigate('/register', { replace: true });
+    }
+  }, [store, navigate]);
+  
+  // Don't render anything if no store (while redirecting)
+  if (!store) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="text-gray-500">Mengalihkan ke halaman daftar toko...</p>
+        </div>
+      </div>
+    );
+  }
   
   // Data States
   const [products, setProducts] = useState<Product[]>([]);

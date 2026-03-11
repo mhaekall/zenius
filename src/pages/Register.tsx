@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Store, Eye, EyeOff } from 'lucide-react';
@@ -25,8 +25,17 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState<'form' | 'success'>('form');
-  const { setUser, setStore, fetchStore } = useAuthStore();
+  const { user, store, setUser, setStore, fetchStore } = useAuthStore();
   const navigate = useNavigate();
+
+  // If user is already logged in and has a store, redirect to dashboard
+  useEffect(() => {
+    if (store) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [store, navigate]);
+
+  type RegisterFormData = z.infer<typeof registerSchema>;
 
   const {
     register,
@@ -40,10 +49,16 @@ export default function Register() {
 
   const handleGoogleLogin = async () => {
     setError('');
+    // Use the current origin for redirect - works for both localhost and production domains
+    const redirectTo = user 
+      ? `${window.location.origin}/dashboard` 
+      : `${window.location.origin}/register`;
+    console.log('[Google Register] Redirect URL:', redirectTo);
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/dashboard`,
+        redirectTo,
       },
     });
     if (error) {
@@ -55,29 +70,39 @@ export default function Register() {
   const onSubmit = async (data: RegisterFormData) => {
     setError('');
 
-    // 1. Create user
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
-    });
+    // Check if user is already logged in (e.g., via Google OAuth)
+    const { data: { session } } = await supabase.auth.getSession();
+    const currentUser = session?.user;
+    
+    let userId = currentUser?.id;
 
-    if (authError) {
-      console.error('Auth signup error:', authError.message);
-      setError('Gagal membuat akun. Silakan coba lagi.');
-      return;
+    // If no existing session, create new user
+    if (!userId) {
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+      });
+
+      if (authError) {
+        console.error('Auth signup error:', authError.message);
+        setError('Gagal membuat akun. Silakan coba lagi.');
+        return;
+      }
+
+      if (!authData.user) {
+        setError('Terjadi kesalahan. Silakan coba lagi.');
+        return;
+      }
+
+      userId = authData.user.id;
     }
 
-    if (!authData.user) {
-      setError('Terjadi kesalahan. Silakan coba lagi.');
-      return;
-    }
-
-    // 2. Create store
-    const slug = sanitizeSlug(data.storeName) || `toko-${authData.user.id.slice(0, 6)}`;
+    // Create store
+    const slug = sanitizeSlug(data.storeName) || `toko-${userId.slice(0, 6)}`;
     const { data: storeData, error: storeError } = await supabase
       .from('stores')
       .insert({
-        owner_id: authData.user.id,
+        owner_id: userId,
         slug,
         name: data.storeName,
         wa_number: data.waNumber.startsWith('0')
@@ -94,10 +119,10 @@ export default function Register() {
       return;
     }
 
-    // 3. Manually set store in Zustand
+    // Manually set store in Zustand
     useAuthStore.getState().setStore(storeData);
     
-    // 4. Show success then navigate
+    // Show success then navigate
     setStep('success');
     setTimeout(() => navigate('/dashboard'), 2000);
   };

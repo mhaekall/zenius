@@ -40,12 +40,19 @@ const PageLoader = () => (
   </div>
 );
 
-// Auth guard component
+// Auth guard component - for routes that require authentication
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuthStore();
+  const { user, store, loading } = useAuthStore();
 
+  // Show loading while checking auth
   if (loading) return <PageLoader />;
+  
+  // Not logged in - redirect to login
   if (!user) return <Navigate to="/login" replace />;
+  
+  // Logged in but no store - redirect to register to create store
+  if (!store) return <Navigate to="/register" replace />;
+  
   return <>{children}</>;
 }
 
