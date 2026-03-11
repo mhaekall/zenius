@@ -64,7 +64,7 @@ export default function Catalog() {
           setCategories(cats);
         }
 
-        supabase.from('analytics_events').insert({
+        await supabase.from('analytics_events').insert({
           store_id: storeData.id,
           event_type: 'page_view',
           referrer: document.referrer || null,
@@ -85,7 +85,7 @@ export default function Catalog() {
       ? products
       : products.filter((p) => p.category === activeCategory);
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (!store) return;
     const waItems = items.map((item) => ({
       name: item.product.name,
@@ -99,10 +99,14 @@ export default function Catalog() {
       window.location.href
     );
 
-    supabase.from('analytics_events').insert({
-      store_id: store.id,
-      event_type: 'wa_checkout',
-    });
+    try {
+      await supabase.from('analytics_events').insert({
+        store_id: store.id,
+        event_type: 'wa_checkout',
+      });
+    } catch (e) {
+      console.error('Analytics failed', e);
+    }
 
     clearCart();
     window.open(url, '_blank');
