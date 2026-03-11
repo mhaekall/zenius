@@ -9,6 +9,7 @@ import { DashboardLayout } from './components/layout/DashboardLayout';
 // Eagerly loaded public pages (Keep small)
 import Landing from './pages/Landing';
 import Catalog from './pages/Catalog';
+import Setup from './pages/Setup';
 
 // Custom lazy function to auto-reload if chunks are outdated (Vite PWA issue)
 const lazyWithRetry = (componentImport: () => Promise<any>) =>
@@ -51,10 +52,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   // Not logged in - redirect to login
   if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
   
-  // Logged in but no store - redirect to register to create store
-  // Use location to prevent redirect loops
-  if (!store && location.pathname !== '/register') {
-    return <Navigate to="/register" replace />;
+  // Logged in but no store - redirect to setup to create store
+  // Allow /setup route to load
+  if (!store && location.pathname !== '/setup') {
+    return <Navigate to="/setup" replace />;
   }
   
   return <>{children}</>;
@@ -206,6 +207,7 @@ export default function App() {
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
             <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+            <Route path="/setup" element={<Setup />} />
             <Route path="/c/:slug" element={<Catalog />} />
           </Route>
 

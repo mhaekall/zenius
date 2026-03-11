@@ -13,6 +13,10 @@ export interface Store {
   wa_number: string;
   is_active: boolean;
   theme_color: string;
+  // New extended fields
+  address: string | null;
+  city: string | null;
+  operating_hours: string | null;
   created_at: string;
   updated_at: string;
 }
