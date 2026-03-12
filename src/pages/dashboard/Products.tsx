@@ -131,6 +131,10 @@ export default function Products() {
   }, [searchParams, setSearchParams]);
 
   const openAdd = () => {
+    if (totalCount >= 15) {
+      toast.error('Batas 15 produk tercapai untuk paket Gratis. Silakan upgrade paket Anda.');
+      return;
+    }
     setEditProduct(null);
     setImageFile(null);
     setImagePreview(null);
@@ -273,6 +277,11 @@ export default function Products() {
       <div className="flex items-center justify-between mb-4 px-1">
         <div>
           <h1 className="text-ios-title2 text-[#1C1917]">Produk</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="px-3 py-1.5 bg-[#F5F4F0] rounded-full border border-black/[0.06] text-xs font-bold text-[#78716C] shadow-ios-sm">
+            <span className={totalCount >= 15 ? 'text-red-500' : 'text-[#1C1917]'}>{totalCount}</span> / 15 Limit
+          </div>
         </div>
       </div>
 

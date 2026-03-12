@@ -10,6 +10,8 @@ import { DashboardLayout } from './components/layout/DashboardLayout';
 import Landing from './pages/Landing';
 import Catalog from './pages/Catalog';
 import Setup from './pages/Setup';
+import FeatureMap from './pages/FeatureMap';
+import BlueprintFlow from './pages/BlueprintFlow';
 
 // Custom lazy function to auto-reload if chunks are outdated (Vite PWA issue)
 const lazyWithRetry = (componentImport: () => Promise<any>) =>
@@ -30,6 +32,7 @@ const Overview = lazyWithRetry(() => import('./pages/dashboard/Overview'));
 const Products = lazyWithRetry(() => import('./pages/dashboard/Products'));
 const Settings = lazyWithRetry(() => import('./pages/dashboard/Settings'));
 const QRCodePage = lazyWithRetry(() => import('./pages/dashboard/QRCode'));
+const Upgrade = lazyWithRetry(() => import('./pages/dashboard/Upgrade'));
 
 // Performance-friendly Loading Spinner
 const PageLoader = () => (
@@ -205,6 +208,8 @@ export default function App() {
           {/* Public Pages - Normal Suspense */}
           <Route element={<Suspense fallback={<PageLoader />}><Outlet /></Suspense>}>
             <Route path="/" element={<Landing />} />
+            <Route path="/feature-map" element={<FeatureMap />} />
+            <Route path="/blueprint" element={<BlueprintFlow />} />
             <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
             <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
             <Route path="/setup" element={<Setup />} />
@@ -221,6 +226,7 @@ export default function App() {
             <Route path="products" element={<Products />} />
             <Route path="settings" element={<Settings />} />
             <Route path="qrcode" element={<QRCodePage />} />
+            <Route path="upgrade" element={<Upgrade />} />
           </Route>
 
           {/* Fallback */}

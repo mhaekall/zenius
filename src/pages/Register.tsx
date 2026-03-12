@@ -25,6 +25,7 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState<'form' | 'success'>('form');
+  const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const { user, store, setUser, setStore, fetchStore } = useAuthStore();
   const navigate = useNavigate();
 
@@ -46,6 +47,30 @@ export default function Register() {
 
   const storeName = watch('storeName', '');
   const previewSlug = sanitizeSlug(storeName);
+
+  useEffect(() => {
+    if (!previewSlug) {
+      setSlugStatus('idle');
+      return;
+    }
+
+    setSlugStatus('checking');
+    const timer = setTimeout(async () => {
+      const { data, error } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('slug', previewSlug)
+        .maybeSingle();
+      
+      if (!error && data) {
+        setSlugStatus('taken');
+      } else {
+        setSlugStatus('available');
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [previewSlug]);
 
   const handleGoogleLogin = async () => {
     setError('');
@@ -69,6 +94,11 @@ export default function Register() {
 
   const onSubmit = async (data: RegisterFormData) => {
     setError('');
+
+    if (slugStatus === 'taken') {
+      setError('URL katalog sudah dipakai. Silakan pilih nama toko lain.');
+      return;
+    }
 
     // Check if user is already logged in (e.g., via Google OAuth)
     const { data: { session } } = await supabase.auth.getSession();
@@ -177,9 +207,14 @@ export default function Register() {
                 error={errors.storeName?.message}
               />
               {previewSlug && (
-                <p className="text-xs text-[#A8A29E] mt-1 px-1">
-                  URL katalog: <span className="text-[#1C1917] font-medium">openmenu.app/{previewSlug}</span>
-                </p>
+                <div className="flex items-center justify-between mt-1 px-1">
+                  <p className="text-xs text-[#A8A29E]">
+                    URL: <span className="text-[#1C1917] font-medium">openmenu.app/{previewSlug}</span>
+                  </p>
+                  {slugStatus === 'checking' && <span className="text-[10px] text-amber-500 font-bold">Memeriksa...</span>}
+                  {slugStatus === 'available' && <span className="text-[10px] text-green-500 font-bold">✓ Tersedia</span>}
+                  {slugStatus === 'taken' && <span className="text-[10px] text-red-500 font-bold">✕ Sudah dipakai</span>}
+                </div>
               )}
             </div>
 

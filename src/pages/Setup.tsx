@@ -35,24 +35,49 @@ type SetupFormData = z.infer<typeof setupSchema>;
 
 export default function Setup() {
   const navigate = useNavigate();
-  const { user, store } = useAuthStore();
+  const { user, store, loading: authLoading } = useAuthStore();
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState<'store' | 'details' | 'success'>('store');
+  const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
 
   // If user already has a store, redirect to dashboard
   useEffect(() => {
-    if (store) {
+    if (store && !authLoading) {
       navigate('/dashboard', { replace: true });
     }
-  }, [store, navigate]);
+  }, [store, authLoading, navigate]);
 
   // If not logged in, redirect to login
   useEffect(() => {
-    if (!user && !store) {
+    if (!user && !authLoading && !store) {
       navigate('/login', { replace: true });
     }
-  }, [user, store, navigate]);
+  }, [user, authLoading, store, navigate]);
+
+  // Show loading while auth is initializing
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-500 to-amber-500">
+        <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col items-center">
+          <div className="w-10 h-10 border-4 border-violet-600 border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-gray-600">Memuat...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if no user available after auth is done
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-500 to-amber-500">
+        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+          <p className="text-red-600 mb-4">Sesi tidak valid. Silakan login ulang.</p>
+          <Button onClick={() => navigate('/login')}>Ke Halaman Login</Button>
+        </div>
+      </div>
+    );
+  }
 
   const {
     register,
@@ -69,8 +94,42 @@ export default function Setup() {
   const storeName = watch('storeName', '');
   const previewSlug = sanitizeSlug(storeName);
 
+  useEffect(() => {
+    if (!previewSlug) {
+      setSlugStatus('idle');
+      return;
+    }
+
+    setSlugStatus('checking');
+    const timer = setTimeout(async () => {
+      const { data, error } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('slug', previewSlug)
+        .maybeSingle();
+      
+      if (!error && data) {
+        setSlugStatus('taken');
+      } else {
+        setSlugStatus('available');
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [previewSlug]);
+
   const onSubmit = async (data: SetupFormData) => {
-    if (!user) return;
+    if (!user) {
+      setError('Sesi tidak valid. Silakan refresh halaman.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (slugStatus === 'taken') {
+      setError('URL katalog sudah dipakai. Silakan pilih nama toko lain.');
+      setIsSubmitting(false);
+      return;
+    }
     
     setError('');
     setIsSubmitting(true);
@@ -222,10 +281,15 @@ export default function Setup() {
                   {errors.storeName && (
                     <p className="text-xs text-red-500 mt-1">{errors.storeName.message}</p>
                   )}
-                  {storeName && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      URL: openmenu.pages.dev/c/{previewSlug}
-                    </p>
+                  {previewSlug && (
+                    <div className="flex items-center justify-between mt-1 px-1">
+                      <p className="text-xs text-[#A8A29E]">
+                        URL: <span className="text-[#1C1917] font-medium">openmenu.app/{previewSlug}</span>
+                      </p>
+                      {slugStatus === 'checking' && <span className="text-[10px] text-amber-500 font-bold">Memeriksa...</span>}
+                      {slugStatus === 'available' && <span className="text-[10px] text-green-500 font-bold">✓ Tersedia</span>}
+                      {slugStatus === 'taken' && <span className="text-[10px] text-red-500 font-bold">✕ Sudah dipakai</span>}
+                    </div>
                   )}
                 </div>
 

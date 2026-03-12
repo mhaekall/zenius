@@ -14,6 +14,7 @@ import { OverviewSkeleton } from '../../components/ui/Skeleton';
 import { ProductPlaceholder } from '../../components/ui/ProductPlaceholder';
 import { Button } from '../../components/ui';
 import type { Product } from '../../types';
+import toast from 'react-hot-toast';
 
 type Period = 'today' | '7d' | '30d';
 
@@ -471,6 +472,52 @@ export default function Overview() {
             className="flex items-center gap-1.5 text-xs text-[#78716C] font-medium ios-press"
           >
             <QrCode className="w-3.5 h-3.5" /> QR Code
+          </Link>
+        </div>
+      </div>
+
+      
+      {/* 7.5. LINK GENERATOR (UTM Tracking) */}
+      <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] p-4 mb-5">
+        <p className="text-[10px] font-semibold text-[#A8A29E] uppercase tracking-widest mb-3">
+          Atribusi & Share (Link Generator)
+        </p>
+        <p className="text-xs text-[#78716C] mb-4">
+          Buat link khusus untuk melacak dari mana pengunjung dan pesanan kamu berasal.
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(catalogUrl + '?utm_source=instagram');
+              toast.success('Link Instagram berhasil disalin!');
+            }}
+            className="flex items-center justify-center gap-2 bg-white border border-[#E8E6E1] p-2.5 rounded-[12px] text-xs font-semibold text-[#1C1917] shadow-sm ios-press"
+          >
+            📸 Instagram
+          </button>
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(catalogUrl + '?utm_source=wa_group');
+              toast.success('Link WhatsApp berhasil disalin!');
+            }}
+            className="flex items-center justify-center gap-2 bg-white border border-[#E8E6E1] p-2.5 rounded-[12px] text-xs font-semibold text-[#1C1917] shadow-sm ios-press"
+          >
+            💬 WA Group
+          </button>
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(catalogUrl + '?utm_source=tiktok');
+              toast.success('Link TikTok berhasil disalin!');
+            }}
+            className="flex items-center justify-center gap-2 bg-white border border-[#E8E6E1] p-2.5 rounded-[12px] text-xs font-semibold text-[#1C1917] shadow-sm ios-press"
+          >
+            🎵 TikTok
+          </button>
+          <Link
+            to="/dashboard/qrcode"
+            className="flex items-center justify-center gap-2 bg-white border border-[#E8E6E1] p-2.5 rounded-[12px] text-xs font-semibold text-[#1C1917] shadow-sm ios-press"
+          >
+            <QrCode className="w-4 h-4" /> Cetak QR Offline
           </Link>
         </div>
       </div>

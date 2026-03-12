@@ -3,7 +3,7 @@ name: Deploy Supabase Migrations
 on:
   push:
     branches:
-      - main
+      - local-workspace
     # Hanya jalankan action ini jika ada perubahan di dalam folder migrations
     paths:
       - 'supabase/migrations/**'

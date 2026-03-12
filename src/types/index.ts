@@ -74,3 +74,16 @@ export interface AnalyticsSummary {
   total_products_viewed: number;
   views_today: number;
 }
+
+export interface Order {
+  id: string;
+  store_id: string;
+  customer_name: string | null;
+  customer_whatsapp: string | null;
+  items_snapshot: any; // JSON representation of items
+  total_amount: number;
+  status: 'pending' | 'confirmed' | 'cancelled';
+  utm_source: string | null;
+  created_at: string;
+  confirmed_at: string | null;
+}

@@ -28,3 +28,4 @@ dist-ssr
 .env
 bundle-stats.html
 .env.cloudflare
+mcp-master-config.json
