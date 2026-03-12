@@ -32,11 +32,21 @@ on conflict (id) do update set public = true;
 -- 3. SETUP BUCKET POLICIES (R/W Access)
 -- ==============================================
 -- Publik boleh membaca gambar
-create policy "Public Access"
-on storage.objects for select
-using ( bucket_id in ('store-assets', 'products') );
+do $$ 
+begin
+  drop policy if exists "Public Access" on storage.objects;
+  create policy "Public Access"
+  on storage.objects for select
+  using ( bucket_id in ('store-assets', 'products') );
+exception when others then null;
+end $$;
 
 -- User terautentikasi boleh upload/hapus gambar
-create policy "Authenticated Users Access"
-on storage.objects for all
-using ( auth.role() = 'authenticated' );
+do $$ 
+begin
+  drop policy if exists "Authenticated Users Access" on storage.objects;
+  create policy "Authenticated Users Access"
+  on storage.objects for all
+  using ( auth.role() = 'authenticated' );
+exception when others then null;
+end $$;
