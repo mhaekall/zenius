@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   Eye, MessageCircle, ShoppingCart,
   ExternalLink, Copy, Check,
-  QrCode, ArrowRight, Package, Crown, TrendingUp
+  QrCode, ArrowRight, Package, Crown, TrendingUp, Plus
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { supabase } from '../../lib/supabase';
@@ -245,8 +245,8 @@ export default function Overview() {
     d.setDate(d.getDate() - (6 - i));
     const key = d.toISOString().split('T')[0];
     const label = d.toLocaleDateString('id-ID', { weekday: 'short' });
-    const views = allEvents.filter((e) => e.event_type === 'page_view' && e.created_at.startsWith(key)).length;
-    const wa = allEvents.filter((e) => e.event_type === 'wa_checkout' && e.created_at.startsWith(key)).length;
+    const views = allEvents.filter((e) => e.event_type === 'page_view' && e.created_at?.startsWith(key)).length;
+    const wa = allEvents.filter((e) => e.event_type === 'wa_checkout' && e.created_at?.startsWith(key)).length;
     return { label, views, wa };
   });
 
@@ -758,13 +758,19 @@ export default function Overview() {
         </div>
 
         {products.length === 0 ? (
-          <div className="bg-[#F5F4F0] rounded-[18px] border-2 border-dashed border-[#E8E6E1] p-8 text-center">
-            <p className="text-ios-caption text-[#A8A29E]">Belum ada produk</p>
+          <div className="bg-[#F5F4F0] rounded-[24px] border border-black/[0.04] p-10 text-center flex flex-col items-center shadow-ios-sm">
+            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm border border-black/[0.02]">
+              <Package className="w-8 h-8 text-[#EEECEA]" />
+            </div>
+            <h3 className="text-sm font-bold text-[#1C1917] mb-1">Etalase Masih Kosong</h3>
+            <p className="text-[11px] text-[#A8A29E] max-w-[180px] mx-auto leading-relaxed">
+              Produk yang paling sering dimasukkan keranjang akan tampil di sini.
+            </p>
             <Link
-              to="/dashboard/products"
-              className="text-xs text-amber-500 font-semibold mt-1 block ios-press"
+              to="/dashboard/products?add=true"
+              className="mt-5 px-6 py-2 bg-[#1C1917] text-white text-[11px] font-bold rounded-full shadow-md active:scale-95 transition-transform"
             >
-              Tambah sekarang →
+              Tambah Produk Pertama
             </Link>
           </div>
         ) : (

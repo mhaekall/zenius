@@ -16,10 +16,12 @@ Berdasarkan tinjauan kritis terhadap risiko bisnis dan "Opportunity Cost" untuk 
 
 ### Phase 1: Product Over Architecture (Fokus Bulan Ini)
 Menyelesaikan fitur yang berhadapan langsung dengan pengguna (*user-facing*) untuk mempercepat laju monetisasi.
-- [ ] **Bundle/Paket Produk (Pricing):** Implementasi halaman upgrade dan logic batasan tier (Gratis vs Juragan vs Bos).
-- [ ] **Onboarding Flow yang Smooth:** Mengarahkan pengguna baru setelah register langsung ke langkah-langkah esensial (upload logo, tambah produk pertama).
-- [ ] **Sistem Notifikasi Pesanan:** Feedback UI (misal: toast) atau notifikasi realtime saat ada pesanan masuk.
-- [ ] **Perbaikan Landing Page:** Penambahan *Social Proof* (Testimonial) dan *Pricing Section* agar UMKM yakin untuk mendaftar.
+- [x] **Bundle/Paket Produk (Pricing):** Implementasi halaman upgrade dan logic batasan tier (Gratis vs Juragan vs Bos).
+- [x] **Onboarding Flow yang Smooth:** Mengarahkan pengguna baru setelah register langsung ke langkah-langkah esensial (upload logo, tambah produk pertama).
+- [x] **Sistem Notifikasi Pesanan:** Feedback UI (misal: toast) atau notifikasi realtime saat ada pesanan masuk.
+- [x] **Perbaikan Landing Page:** Penambahan *Social Proof* (Testimonial) dan *Pricing Section* agar UMKM yakin untuk mendaftar.
+- [x] **Manajemen Masal & Drag-and-Drop:** Fitur produktivitas pemilik toko di Dashboard.
+- [x] **Analitik & Estimasi Omset:** Motivasi visual berbasis data untuk pemilik toko.
 
 ### Phase 2: Incremental Improvement (Q2)
 Upgrade teknis berisiko rendah dengan *Developer Experience* (DX) yang tinggi.

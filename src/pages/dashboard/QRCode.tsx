@@ -50,6 +50,13 @@ export default function QRCodePage() {
   const [qrColor, setQrColor] = useState('#1C1917');
   const [bgColor, setBgColor] = useState('#FAFAF8');
   const [showLogo, setShowLogo] = useState(true);
+  const [qrSize, setQrSize] = useState<'S' | 'M' | 'L'>('M');
+
+  const sizePixels = {
+    S: 512,
+    M: 1024,
+    L: 2048
+  };
 
   // Sync initial color with store theme once it loads
   useEffect(() => {
@@ -69,7 +76,7 @@ export default function QRCodePage() {
       await new Promise(resolve => setTimeout(resolve, 300)); 
       
       const blob = await toBlob(qrRef.current, { 
-        pixelRatio: 3,
+        pixelRatio: qrSize === 'S' ? 1.5 : qrSize === 'M' ? 3 : 5,
         style: {
           margin: '0',
           transform: 'none',
@@ -198,9 +205,25 @@ export default function QRCodePage() {
 
         {/* 2. Action Buttons */}
         <div className="space-y-3">
-          <Button onClick={downloadQR} className="w-full py-3.5 text-base shadow-ios-sm ios-press">
-            <Download className="w-5 h-5 mr-2" /> Download PNG
-          </Button>
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-1 bg-[#EEECEA] p-1 rounded-xl">
+              {(['S', 'M', 'L'] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setQrSize(s)}
+                  className={cn(
+                    "flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all",
+                    qrSize === s ? "bg-white text-[#1C1917] shadow-sm" : "text-[#A8A29E]"
+                  )}
+                >
+                  {s === 'S' ? 'Kecil' : s === 'M' ? 'Sedang' : 'Besar'}
+                </button>
+              ))}
+            </div>
+            <Button onClick={downloadQR} className="w-full py-3.5 text-base shadow-ios-sm ios-press">
+              <Download className="w-5 h-5 mr-2" /> Download PNG ({sizePixels[qrSize]}px)
+            </Button>
+          </div>
           
           <Button variant="secondary" onClick={downloadPDF} className="w-full py-3.5 text-base shadow-ios-sm ios-press bg-[#EEECEA] text-[#1C1917]">
             <FileText className="w-5 h-5 mr-2" /> Buat Poster PDF

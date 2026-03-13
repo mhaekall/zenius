@@ -12,6 +12,9 @@ import Catalog from './pages/Catalog';
 import Setup from './pages/Setup';
 import FeatureMap from './pages/FeatureMap';
 import BlueprintFlow from './pages/BlueprintFlow';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
+import Support from './pages/Support';
 
 // Custom lazy function to auto-reload if chunks are outdated (Vite PWA issue)
 const lazyWithRetry = (componentImport: () => Promise<any>) =>
@@ -82,7 +85,6 @@ function GuestRoute({ children }: { children: React.ReactNode }) {
 // Persistent Layout Wrapper with Stabilized Transitions
 function DashboardWrapper() {
   const location = useLocation();
-  const outlet = useOutlet();
   
   return (
     <DashboardLayout activeHref={location.pathname}>
@@ -101,7 +103,7 @@ function DashboardWrapper() {
             transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }} // Snappy Apple-style easing
             className="w-full"
           >
-            {outlet}
+            <Outlet />
           </motion.div>
         </AnimatePresence>
       </Suspense>
@@ -115,12 +117,25 @@ function AuthInit({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let authEventReceived = false; // Track if auth event has been received
+
+    // Safety timeout — only if onAuthStateChange never fires at all
+    // We give it longer now since fetchStore can take time
+    const timeout = setTimeout(() => {
+      if (mounted && !authEventReceived) {
+        console.log('[Auth] Safety timeout reached - no auth event');
+        setLoading(false);
+      } else if (mounted && authEventReceived) {
+        console.log('[Auth] Safety timeout - auth event received, waiting for fetchStore');
+      }
+    }, 5000); // Increased to 5 seconds to allow fetchStore to complete
 
     // Single source of truth: onAuthStateChange handles everything
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
-
+        
+        authEventReceived = true; // Mark that we received an auth event
         console.log('[Auth]', event, session?.user?.email);
 
         if (session?.user) {
@@ -128,6 +143,7 @@ function AuthInit({ children }: { children: React.ReactNode }) {
           // fetchStore only if store is missing or belongs to another user
           const currentStore = useAuthStore.getState().store;
           if (!currentStore || currentStore.owner_id !== session.user.id) {
+            // Wait for fetchStore to complete before setting loading to false
             await fetchStore(session.user.id);
           }
         } else {
@@ -135,13 +151,15 @@ function AuthInit({ children }: { children: React.ReactNode }) {
           useAuthStore.getState().setStore(null);
         }
 
-        // Set loading false after processing the session
+        // Set loading false after processing the session AND fetchStore
         setLoading(false);
+        clearTimeout(timeout);
       }
     );
 
     return () => {
       mounted = false;
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, [setUser, setLoading, fetchStore]);
@@ -172,6 +190,9 @@ export default function App() {
             <Route path="/reset-password" element={<GuestRoute><ResetPassword /></GuestRoute>} />
             <Route path="/setup" element={<Setup />} />
             <Route path="/c/:slug" element={<Catalog />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/support" element={<Support />} />
           </Route>
 
           {/* Dashboard - Persistent Layout */}

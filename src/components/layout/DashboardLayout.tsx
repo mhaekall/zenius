@@ -51,8 +51,6 @@ export function DashboardLayout({ children, activeHref }: DashboardLayoutProps) 
                 fontSize: '14px',
               },
             });
-            
-            // Haptic-like sound or vibration could go here if native
           }
         }
       )
@@ -71,27 +69,28 @@ export function DashboardLayout({ children, activeHref }: DashboardLayoutProps) 
   ];
 
   return (
-    <div className="min-h-screen bg-[#fcfcfc] relative pb-24">
-      {/* Main Content Area */}
+    <div className="min-h-screen bg-[#fcfcfc] relative pb-24 sm:pb-6">
+      {/* Main Content Area - Better mobile padding */}
       <main className="p-4 md:p-6 lg:max-w-2xl lg:mx-auto pt-6">
         {children}
       </main>
 
-      {/* Persistent Floating Action Buttons (Outside transition area) */}
+      {/* Floating Action Buttons */}
       <div className="fixed bottom-20 right-6 z-40">
         {/* FAB for Dashboard Home: View Store */}
         {activeHref === '/dashboard' && store && (
-          <a href={`${window.location.origin}/c/${store.slug}`} target="_blank" rel="noopener noreferrer">
-            <motion.div
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.9 }}
-              className="w-12 h-12 bg-black text-white rounded-2xl shadow-xl shadow-black/20 flex items-center justify-center border border-white/10"
-            >
-              <Store className="w-5 h-5" />
-            </motion.div>
-          </a>
+          <motion.a
+            href={`${window.location.origin}/c/${store.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.9 }}
+            className="w-12 h-12 bg-black text-white rounded-2xl shadow-xl shadow-black/20 flex items-center justify-center border border-white/10"
+          >
+            <Store className="w-5 h-5" />
+          </motion.a>
         )}
 
         {/* FAB for Products Page: Add Product */}
@@ -111,12 +110,12 @@ export function DashboardLayout({ children, activeHref }: DashboardLayoutProps) 
         )}
       </div>
 
-      {/* Ramping & Padat Light Mode Bottom Navigation */}
+      {/* Bottom Navigation - Improved touch targets */}
       <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 w-full max-w-[340px] px-4 sm:px-0">
         <motion.nav 
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="flex items-center justify-between px-1.5 py-1 rounded-[28px] glass-thick border border-[#E8E6E1]/60 shadow-ios-lg"
+          className="flex items-center justify-between px-2 py-1.5 rounded-[28px] glass-thick border border-[#E8E6E1]/60 shadow-ios-lg backdrop-blur-xl"
         >
           {navItems.map((item) => {
             const isActive = activeHref === item.href || 
@@ -126,9 +125,8 @@ export function DashboardLayout({ children, activeHref }: DashboardLayoutProps) 
               <Link key={item.href} to={item.href} className="relative flex-1 group">
                 <motion.div
                   whileTap={{ scale: 0.94 }}
-                  className="flex flex-col items-center justify-center py-1.5 w-full h-full relative"
+                  className="flex flex-col items-center justify-center py-2 px-1 w-full h-full relative"
                 >
-                  {/* Subtle Indicator for Active Tab */}
                   {isActive && (
                     <motion.div
                       layoutId="active-nav-warm"

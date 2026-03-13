@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Pencil, Trash2, Package, ToggleLeft, ToggleRight, Search, GripVertical, Check } from 'lucide-react';
+import { Plus, Pencil, Trash2, Package, ToggleLeft, ToggleRight, Search, GripVertical, Check, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -442,14 +442,25 @@ export default function Products() {
       </AnimatePresence>
 
       {loading ? <ProductsGridSkeleton /> : filteredProducts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="w-16 h-16 bg-[#F5F4F0] rounded-full flex items-center justify-center mb-4 shadow-ios-sm border border-black/[0.06]">
-            <Package className="w-8 h-8 text-[#A8A29E]" />
-          </div>
-          <p className="text-sm font-medium text-[#78716C] mb-4">
-            {searchQuery || selectedCategory !== 'Semua' ? 'Tidak ditemukan' : 'Belum ada produk'}
+        <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="w-20 h-20 bg-[#F5F4F0] rounded-[28px] flex items-center justify-center mb-6 shadow-ios-md border border-black/[0.04]"
+          >
+            <Package className="w-10 h-10 text-[#A8A29E]" />
+          </motion.div>
+          <h3 className="text-xl font-black text-[#1C1917] mb-2 tracking-tight">
+            {searchQuery || selectedCategory !== 'Semua' ? 'Tidak Ditemukan' : 'Mulai Jualan Yuk!'}
+          </h3>
+          <p className="text-sm text-[#78716C] max-w-[240px] leading-relaxed mb-8">
+            {searchQuery || selectedCategory !== 'Semua' 
+              ? `Kami tidak menemukan produk "${searchQuery}" di kategori ini.`
+              : 'Tambahkan produk pertamamu dan lihat betapa cantiknya katalog digitalmu nanti.'}
           </p>
-          <Button size="sm" onClick={openAdd}>Tambah Produk</Button>
+          <Button size="lg" onClick={openAdd} className="px-8 shadow-ios-lg rounded-full">
+            {searchQuery || selectedCategory !== 'Semua' ? 'Ulangi Pencarian' : 'Tambah Produk Pertama'}
+          </Button>
         </div>
       ) : (
         <>

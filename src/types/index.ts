@@ -17,6 +17,9 @@ export interface Store {
   address: string | null;
   city: string | null;
   operating_hours: string | null;
+  instagram_username: string | null;
+  tiktok_username: string | null;
+  announcement: string | null;
   created_at: string;
   updated_at: string;
 }

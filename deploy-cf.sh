@@ -4,7 +4,7 @@ set -e
 
 # 1. Load Credentials
 source .env.cloudflare
-PROJECT_NAME="zenius"
+PROJECT_NAME="openmenu"
 
 echo "🚀 Starting Deployment for $PROJECT_NAME..."
 

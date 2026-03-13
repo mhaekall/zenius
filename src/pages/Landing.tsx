@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Store, QrCode, Smartphone, ArrowRight, Package } from 'lucide-react';
+import { Store, QrCode, Smartphone, ArrowRight, Package, Plus } from 'lucide-react';
 import { Button } from '../components/ui';
 
 export default function Landing() {
@@ -120,7 +120,30 @@ export default function Landing() {
         </motion.div>
       </main>
 
-      {/* 3. Footer (Apple Style Minimalist) */}
+      {/* 3. FAQ Section (Minimalist Accordion) */}
+      <section className="max-w-xl mx-auto px-4 sm:px-6 py-20 w-full border-t border-black/[0.04]">
+        <h2 className="text-2xl font-black text-[#1C1917] mb-10 text-center tracking-tight">Pertanyaan Umum</h2>
+        <div className="space-y-3">
+          {[
+            { q: "Apakah ini benar-benar gratis?", a: "Ya, OpenMenu memiliki paket gratis selamanya untuk UMKM dengan maksimal 15 produk. Kami ingin membantu Anda beralih ke digital tanpa beban biaya." },
+            { q: "Bagaimana cara pelanggan memesan?", a: "Pelanggan cukup scan QR Code Anda (atau klik link di bio), pilih menu, dan klik tombol pesan. Rincian pesanan akan otomatis terkirim ke WhatsApp Anda." },
+            { q: "Perlukah pelanggan menginstal aplikasi?", a: "Tidak. Katalog Anda berbasis web (PWA), pelanggan cukup membukanya melalui browser HP apa pun tanpa perlu download apa-apa." },
+            { q: "Bisa pakai domain sendiri?", a: "Bisa. Fitur custom domain (.com atau .id) tersedia pada paket Pro Max untuk brand yang ingin tampil lebih eksklusif." }
+          ].map((item, idx) => (
+            <details key={idx} className="group bg-[#F5F4F0] rounded-2xl overflow-hidden transition-all border border-black/[0.02]">
+              <summary className="list-none flex items-center justify-between p-5 cursor-pointer active:bg-[#EEECEA] transition-colors">
+                <span className="text-sm font-bold text-[#1C1917]">{item.q}</span>
+                <Plus className="w-4 h-4 text-[#A8A29E] group-open:rotate-45 transition-transform" />
+              </summary>
+              <div className="px-5 pb-5">
+                <p className="text-xs text-[#78716C] font-medium leading-relaxed">{item.a}</p>
+              </div>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      {/* 4. Footer (Apple Style Minimalist) */}
       <footer className="border-t border-black/[0.04] py-8 mt-12">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 grayscale opacity-50">
@@ -128,8 +151,9 @@ export default function Landing() {
             <span className="text-xs font-bold text-[#1C1917]">OpenMenu</span>
           </div>
           <div className="flex gap-6">
-            <Link to="/login" className="text-xs text-[#A8A29E] hover:text-[#1C1917] transition-colors">Login</Link>
-            <a href="mailto:support@openmenu.app" className="text-xs text-[#A8A29E] hover:text-[#1C1917] transition-colors">Support</a>
+            <Link to="/support" className="text-xs text-[#A8A29E] hover:text-[#1C1917] transition-colors">Support</Link>
+            <Link to="/terms" className="text-xs text-[#A8A29E] hover:text-[#1C1917] transition-colors">Ketentuan</Link>
+            <Link to="/privacy" className="text-xs text-[#A8A29E] hover:text-[#1C1917] transition-colors">Privasi</Link>
           </div>
         </div>
       </footer>

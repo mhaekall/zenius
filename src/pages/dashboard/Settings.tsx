@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Camera, Save, LogOut, ChevronRight, Lock, Eye, EyeOff, MapPin, Clock, Trash2, Globe } from 'lucide-react';
+import { Camera, Save, LogOut, ChevronRight, Lock, Eye, EyeOff, MapPin, Clock, Trash2, Globe, Palette, Instagram, MessageSquare, Megaphone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -24,6 +24,9 @@ const settingsSchema = z.object({
   theme_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Format warna tidak valid'),
   address: z.string().optional(),
   operating_hours: z.string().optional(),
+  instagram_username: z.string().optional(),
+  tiktok_username: z.string().optional(),
+  announcement: z.string().max(100, 'Maksimal 100 karakter').optional(),
   is_active: z.boolean().default(true),
 });
 type SettingsFormData = z.infer<typeof settingsSchema>;
@@ -98,6 +101,9 @@ export default function Settings() {
       theme_color: store?.theme_color || '#F59E0B',
       address: store?.address || '',
       operating_hours: store?.operating_hours || '',
+      instagram_username: store?.instagram_username || '',
+      tiktok_username: store?.tiktok_username || '',
+      announcement: store?.announcement || '',
       is_active: store?.is_active ?? true,
     },
   });
@@ -407,10 +413,47 @@ export default function Settings() {
               className="bg-[#EEECEA]"
               placeholder="Ceritakan tentang tokomu kepada pelanggan..."
             />
-          </div>
-        </section>
+            </div>
+            </section>
 
-        {/* Section: Paket Langganan */}
+            {/* Section: Sosial Media */}
+            <section>
+            <h2 className="text-ios-caption uppercase tracking-widest text-[#A8A29E] mb-1.5 px-3">Sosial Media</h2>
+            <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] shadow-ios-sm overflow-hidden px-4 py-2 space-y-3 pb-4">
+            <Input
+              label="Instagram"
+              icon={<Instagram className="w-4 h-4" />}
+              placeholder="username_instagram"
+              {...register('instagram_username')}
+              className="bg-[#EEECEA]"
+            />
+            <Input
+              label="TikTok"
+              icon={<MessageSquare className="w-4 h-4" />}
+              placeholder="username_tiktok"
+              {...register('tiktok_username')}
+              className="bg-[#EEECEA]"
+            />
+            </div>
+            </section>
+
+            {/* Section: Pengumuman Toko */}
+            <section>
+            <h2 className="text-ios-caption uppercase tracking-widest text-[#A8A29E] mb-1.5 px-3">Banner Pengumuman</h2>
+            <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] shadow-ios-sm overflow-hidden px-4 py-3">
+            <Input
+              label="Teks Pengumuman"
+              icon={<Megaphone className="w-4 h-4" />}
+              placeholder="Misal: Diskon 20% khusus hari ini!"
+              {...register('announcement')}
+              className="bg-[#EEECEA]"
+              maxLength={100}
+            />
+            <p className="text-[10px] text-[#A8A29E] mt-2 px-1">Muncul di bagian paling atas katalog publik.</p>
+            </div>
+            </section>
+
+            {/* Section: Paket Langganan */}
         <section>
           <h2 className="text-ios-caption uppercase tracking-widest text-[#A8A29E] mb-1.5 px-3">Paket Langganan</h2>
           <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] shadow-ios-sm overflow-hidden px-4 py-4 flex items-center justify-between">

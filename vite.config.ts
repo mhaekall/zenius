@@ -10,6 +10,7 @@ export default defineConfig({
     // import { ssgPlugin } from 'vite-plugin-ssg';
     // ssgPlugin({ pages: ['/', '/login', '/register', '/dashboard', '/c/:slug'] })
     VitePWA({
+      disable: true,
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
