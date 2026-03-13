@@ -129,7 +129,7 @@ export default function Overview() {
   
   // Data States
   const [products, setProducts] = useState<Product[]>([]);
-  const [allEvents, setAllEvents] = useState<Array<{ event_type: string; created_at: string }>>([]);
+  const [allEvents, setAllEvents] = useState<any[]>([]);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
   
@@ -165,7 +165,7 @@ export default function Overview() {
 
     supabase
       .from('analytics_events')
-      .select('event_type, created_at, product_id')
+      .select('event_type, created_at, product_id, referrer')
       .eq('store_id', store.id)
       .order('created_at', { ascending: false })
       .limit(1000)

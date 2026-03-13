@@ -116,54 +116,16 @@ function AuthInit({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // Explicit session check - langsung cek session tanpa tunggu onAuthStateChange
-    const initAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!mounted) return;
-        
-        console.log('[Auth] Initial session check:', session?.user?.email);
-        
-        if (session?.user) {
-          setUser(session.user);
-          const currentStore = useAuthStore.getState().store;
-          if (!currentStore || currentStore.owner_id !== session.user.id) {
-            await fetchStore(session.user.id);
-          }
-        } else {
-          setUser(null);
-          useAuthStore.getState().setStore(null);
-        }
-      } catch (err) {
-        console.error('[Auth] Error getting session:', err);
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    // Jalankan initAuth dulu, baru mendengarkan perubahan
-    initAuth();
-
     // Single source of truth: onAuthStateChange handles everything
-    // including the initial session check via INITIAL_SESSION event
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
 
         console.log('[Auth]', event, session?.user?.email);
 
-        // Hindari re-fetch store pada token refresh — tidak perlu
-        if (event === 'TOKEN_REFRESHED') {
-          setLoading(false);
-          return;
-        }
-
         if (session?.user) {
           setUser(session.user);
-          // fetchStore hanya kalau belum ada store di cache atau beda user
+          // fetchStore only if store is missing or belongs to another user
           const currentStore = useAuthStore.getState().store;
           if (!currentStore || currentStore.owner_id !== session.user.id) {
             await fetchStore(session.user.id);
@@ -173,25 +135,16 @@ function AuthInit({ children }: { children: React.ReactNode }) {
           useAuthStore.getState().setStore(null);
         }
 
-        // Always set loading false after first event
+        // Set loading false after processing the session
         setLoading(false);
       }
     );
 
-    // Safety timeout — if onAuthStateChange never fires (offline/error)
-    // release the loading gate after 2s to prevent infinite spinner
-    const timeout = setTimeout(() => {
-      if (mounted) {
-        setLoading(false);
-      }
-    }, 2000);
-
     return () => {
       mounted = false;
-      clearTimeout(timeout);
       subscription.unsubscribe();
     };
-  }, []); // <-- hapus dependency array agar tidak re-run
+  }, [setUser, setLoading, fetchStore]);
 
   return <>{children}</>;
 }

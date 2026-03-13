@@ -83,7 +83,10 @@ function ProductCard({
           {product.image_url ? (
             <>
               {!imgLoaded && (
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse" />
+                <div 
+                  className="absolute inset-0 animate-pulse" 
+                  style={{ background: `linear-gradient(135deg, rgba(${themeRgb}, 0.05), rgba(${themeRgb}, 0.12))` }}
+                />
               )}
               <img
                 src={getOptimizedImage(product.image_url, 400)}
