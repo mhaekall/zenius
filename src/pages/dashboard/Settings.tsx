@@ -2,13 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Camera, Save, LogOut, ChevronRight } from 'lucide-react';
+import { Camera, Save, LogOut, ChevronRight, Lock, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import imageCompression from 'browser-image-compression';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
-import { Button, Input, Textarea } from '../../components/ui';
+import { Button, Input, Textarea, Modal } from '../../components/ui';
 import { SettingsSkeleton } from '../../components/ui/Skeleton';
 import { sanitizeSlug, cn } from '../../lib/utils';
 import type { Store } from '../../types';
@@ -24,6 +25,15 @@ const settingsSchema = z.object({
 });
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
+const passwordSchema = z.object({
+  newPassword: z.string().min(6, 'Password baru minimal 6 karakter'),
+  confirmPassword: z.string()
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Password tidak cocok",
+  path: ["confirmPassword"],
+});
+type PasswordFormData = z.infer<typeof passwordSchema>;
+
 export default function Settings() {
   const { user, store, setStore, signOut } = useAuthStore();
   const navigate = useNavigate();
@@ -33,6 +43,30 @@ export default function Settings() {
   const [qrisFile, setQrisFile] = useState<File | null>(null);
   const logoRef = useRef<HTMLInputElement>(null);
   const qrisRef = useRef<HTMLInputElement>(null);
+  
+  // Password Change Modal State
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const {
+    register: registerPassword,
+    handleSubmit: handlePasswordSubmit,
+    reset: resetPasswordForm,
+    formState: { errors: passwordErrors, isSubmitting: isSubmittingPassword }
+  } = useForm<PasswordFormData>({
+    resolver: zodResolver(passwordSchema)
+  });
+
+  const onChangePassword = async (data: PasswordFormData) => {
+    const { error } = await supabase.auth.updateUser({ password: data.newPassword });
+    if (error) {
+      toast.error(`Gagal mengubah password: ${error.message}`);
+    } else {
+      toast.success('Password berhasil diperbarui');
+      setIsPasswordModalOpen(false);
+      resetPasswordForm();
+    }
+  };
+
   // Cleanup blob URLs to prevent memory leak
   useEffect(() => {
     return () => {
@@ -289,22 +323,80 @@ export default function Settings() {
 
         {/* Section: Akun */}
         <section className="mt-8">
+          <h2 className="text-ios-caption uppercase tracking-widest text-[#A8A29E] mb-1.5 px-3">Akun</h2>
           <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] shadow-ios-sm overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setIsPasswordModalOpen(true)}
+              className="w-full flex items-center justify-between py-3.5 px-4 cursor-pointer active:bg-[#EEECEA] transition-colors border-b border-black/[0.04]"
+            >
+              <div className="flex items-center text-[#1C1917]">
+                <Lock className="w-4 h-4 mr-3 text-[#A8A29E]" />
+                <span className="text-sm font-medium">Ganti Password</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-[#A8A29E]" />
+            </button>
             <button
               type="button"
               onClick={async () => {
                 await signOut();
                 navigate('/login');
               }}
-              className="w-full flex items-center justify-center py-3.5 px-4 text-sm font-medium text-red-500 active:bg-[#EEECEA] transition-colors"
+              className="w-full flex items-center py-3.5 px-4 cursor-pointer active:bg-[#EEECEA] transition-colors"
             >
-              <LogOut className="w-4 h-4 mr-2" /> Keluar Akun
+              <LogOut className="w-4 h-4 mr-3 text-red-500" />
+              <span className="text-sm font-medium text-red-500">Keluar Akun</span>
             </button>
           </div>
         </section>
 
       </form>
       )}
+
+      {/* Change Password Modal */}
+      <AnimatePresence>
+        {isPasswordModalOpen && (
+          <Modal
+            open={isPasswordModalOpen}
+            onClose={() => {
+              setIsPasswordModalOpen(false);
+              resetPasswordForm();
+            }}
+            title="Ganti Password"
+          >
+            <form onSubmit={handlePasswordSubmit(onChangePassword)} className="space-y-4">
+              <div className="relative">
+                <Input
+                  label="Password Baru"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Minimal 6 karakter"
+                  {...registerPassword('newPassword')}
+                  error={passwordErrors.newPassword?.message}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-[34px] text-[#A8A29E] hover:text-[#1C1917] transition-colors p-1"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <Input
+                label="Konfirmasi Password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Ulangi password baru"
+                {...registerPassword('confirmPassword')}
+                error={passwordErrors.confirmPassword?.message}
+              />
+              <div className="pt-2">
+                <Button type="submit" loading={isSubmittingPassword} className="w-full py-3.5 shadow-ios-sm">
+                  Simpan Password
+                </Button>
+              </div>
+            </form>
+          </Modal>
+        )}
+      </AnimatePresence>
     </>
   );
 }

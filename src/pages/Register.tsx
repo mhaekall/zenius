@@ -8,13 +8,8 @@ import { z } from 'zod';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
 import { Button, Input } from '../components/ui';
-import { sanitizeSlug } from '../lib/utils';
 
 const registerSchema = z.object({
-  storeName: z.string().min(2, 'Nama toko minimal 2 karakter'),
-  waNumber: z.string()
-    .min(8, 'Nomor WhatsApp minimal 8 digit')
-    .regex(/^(0|62)?[0-9]{8,12}$/, 'Format nomor tidak valid (contoh: 628xxxxxxxxxx atau 08xxxxxxxxxx)'),
   email: z.string().email('Email tidak valid'),
   password: z.string().min(6, 'Password minimal 6 karakter'),
 });
@@ -24,60 +19,30 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [step, setStep] = useState<'form' | 'success'>('form');
-  const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
-  const { user, store, setUser, setStore, fetchStore } = useAuthStore();
+  const { user, store } = useAuthStore();
   const navigate = useNavigate();
 
-  // If user is already logged in and has a store, redirect to dashboard
+  // If user is already logged in, route them appropriately
   useEffect(() => {
-    if (store) {
-      navigate('/dashboard', { replace: true });
+    if (user) {
+      if (store) {
+        navigate('/dashboard', { replace: true });
+      } else {
+        navigate('/setup', { replace: true });
+      }
     }
-  }, [store, navigate]);
-
-  type RegisterFormData = z.infer<typeof registerSchema>;
+  }, [user, store, navigate]);
 
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormData>({ resolver: zodResolver(registerSchema) });
-
-  const storeName = watch('storeName', '');
-  const previewSlug = sanitizeSlug(storeName);
-
-  useEffect(() => {
-    if (!previewSlug) {
-      setSlugStatus('idle');
-      return;
-    }
-
-    setSlugStatus('checking');
-    const timer = setTimeout(async () => {
-      const { data, error } = await supabase
-        .from('stores')
-        .select('id')
-        .eq('slug', previewSlug)
-        .maybeSingle();
-      
-      if (!error && data) {
-        setSlugStatus('taken');
-      } else {
-        setSlugStatus('available');
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [previewSlug]);
 
   const handleGoogleLogin = async () => {
     setError('');
     // Use the current origin for redirect - works for both localhost and production domains
-    const redirectTo = user 
-      ? `${window.location.origin}/dashboard` 
-      : `${window.location.origin}/register`;
+    const redirectTo = `${window.location.origin}/setup`;
     console.log('[Google Register] Redirect URL:', redirectTo);
     
     const { error } = await supabase.auth.signInWithOAuth({
@@ -95,88 +60,21 @@ export default function Register() {
   const onSubmit = async (data: RegisterFormData) => {
     setError('');
 
-    if (slugStatus === 'taken') {
-      setError('URL katalog sudah dipakai. Silakan pilih nama toko lain.');
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
+    });
+
+    if (authError) {
+      console.error('Auth signup error:', authError.message);
+      setError('Gagal membuat akun. Mungkin email sudah terdaftar.');
       return;
     }
 
-    // Check if user is already logged in (e.g., via Google OAuth)
-    const { data: { session } } = await supabase.auth.getSession();
-    const currentUser = session?.user;
-    
-    let userId = currentUser?.id;
-
-    // If no existing session, create new user
-    if (!userId) {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-      });
-
-      if (authError) {
-        console.error('Auth signup error:', authError.message);
-        setError('Gagal membuat akun. Silakan coba lagi.');
-        return;
-      }
-
-      if (!authData.user) {
-        setError('Terjadi kesalahan. Silakan coba lagi.');
-        return;
-      }
-
-      userId = authData.user.id;
+    if (authData.user) {
+      navigate('/setup');
     }
-
-    // Create store
-    const slug = sanitizeSlug(data.storeName) || `toko-${userId.slice(0, 6)}`;
-    const { data: storeData, error: storeError } = await supabase
-      .from('stores')
-      .insert({
-        owner_id: userId,
-        slug,
-        name: data.storeName,
-        wa_number: data.waNumber.startsWith('0')
-          ? '62' + data.waNumber.slice(1)
-          : data.waNumber,
-        theme_color: '#F59E0B',
-      })
-      .select()
-      .single();
-
-    if (storeError) {
-      console.error('Store Insert Error:', storeError.message);
-      setError('Gagal membuat toko. Silakan coba lagi.');
-      return;
-    }
-
-    // Manually set store in Zustand
-    useAuthStore.getState().setStore(storeData);
-    
-    // Show success then navigate
-    setStep('success');
-    setTimeout(() => navigate('/dashboard'), 2000);
   };
-
-  if (step === 'success') {
-    return (
-      <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center p-4">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-          className="text-center"
-        >
-          <div className="w-20 h-20 bg-[#F5F4F0] rounded-full flex items-center justify-center mx-auto mb-4 border border-[#34C759] shadow-ios-md">
-            <svg className="w-10 h-10 text-[#34C759]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-bold text-[#1C1917] mb-2">Toko berhasil dibuat! 🎉</h2>
-          <p className="text-[#78716C] text-sm">Mengarahkan ke dashboard...</p>
-        </motion.div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center p-4">
@@ -193,39 +91,12 @@ export default function Register() {
             </div>
             <span className="text-xl font-bold text-[#1C1917] tracking-tight">OpenMenu</span>
           </div>
-          <h1 className="text-xl font-bold text-[#1C1917]">Buat Katalog Digital</h1>
+          <h1 className="text-xl font-bold text-[#1C1917]">Buat Akun Baru</h1>
           <p className="text-sm text-[#78716C] mt-1">Gratis & siap dalam 2 menit</p>
         </div>
 
         <div className="bg-[#F5F4F0] rounded-[28px] shadow-ios-md border border-black/[0.06] p-6">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div>
-              <Input
-                label="Nama Toko / Bisnis"
-                placeholder="contoh: Kafe Kopi Nusantara"
-                {...register('storeName')}
-                error={errors.storeName?.message}
-              />
-              {previewSlug && (
-                <div className="flex items-center justify-between mt-1 px-1">
-                  <p className="text-xs text-[#A8A29E]">
-                    URL: <span className="text-[#1C1917] font-medium">openmenu.app/{previewSlug}</span>
-                  </p>
-                  {slugStatus === 'checking' && <span className="text-[10px] text-amber-500 font-bold">Memeriksa...</span>}
-                  {slugStatus === 'available' && <span className="text-[10px] text-green-500 font-bold">✓ Tersedia</span>}
-                  {slugStatus === 'taken' && <span className="text-[10px] text-red-500 font-bold">✕ Sudah dipakai</span>}
-                </div>
-              )}
-            </div>
-
-            <Input
-              label="Nomor WhatsApp"
-              placeholder="08123456789"
-              type="tel"
-              {...register('waNumber')}
-              error={errors.waNumber?.message}
-              hint="Pesanan pelanggan akan masuk ke nomor ini"
-            />
             <Input
               label="Email"
               type="email"
@@ -264,7 +135,7 @@ export default function Register() {
             </AnimatePresence>
 
             <Button type="submit" loading={isSubmitting} className="w-full py-4 text-base mt-2 shadow-ios-sm">
-              Buat Toko Gratis
+              Buat Akun
             </Button>
             
             <div className="relative my-4">

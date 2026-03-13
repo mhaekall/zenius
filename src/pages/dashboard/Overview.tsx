@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   Eye, MessageCircle, ShoppingCart,
   ExternalLink, Copy, Check,
-  QrCode, ArrowRight, Package
+  QrCode, ArrowRight, Package, Crown
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { supabase } from '../../lib/supabase';
@@ -165,7 +165,7 @@ export default function Overview() {
 
     supabase
       .from('analytics_events')
-      .select('event_type, created_at')
+      .select('event_type, created_at, product_id')
       .eq('store_id', store.id)
       .order('created_at', { ascending: false })
       .limit(1000)
@@ -234,14 +234,113 @@ export default function Overview() {
   return (
     <>
       {/* 1. PAGE HEADER — compact */}
-      <div className="mb-4">
-        <h1 className="text-ios-title2 font-bold text-[#1C1917] tracking-tight">
-          {store.name}
-        </h1>
-        <p className="text-ios-caption text-[#A8A29E] mt-0.5">
-          {catalogUrl}
-        </p>
+      <div className="mb-4 flex items-start justify-between">
+        <div>
+          <h1 className="text-ios-title2 font-bold text-[#1C1917] tracking-tight">
+            {store.name}
+          </h1>
+          <p className="text-ios-caption text-[#A8A29E] mt-0.5">
+            {catalogUrl}
+          </p>
+        </div>
+        <Link 
+          to="/dashboard/upgrade"
+          className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm shadow-amber-500/20 hover:shadow-md hover:scale-105 transition-all ios-press flex items-center gap-1"
+        >
+          <Crown className="w-3.5 h-3.5" /> Upgrade
+        </Link>
       </div>
+
+      {/* 1.5 ONBOARDING CHECKLIST (Hidden when done) */}
+      {totalProducts === 0 && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          className="mb-5 bg-[#1C1917] rounded-[24px] p-5 shadow-xl shadow-black/10 text-white relative overflow-hidden"
+        >
+          {/* Subtle background glow */}
+          <div className="absolute top-[-50%] right-[-10%] w-40 h-40 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="relative z-10">
+            <h3 className="text-lg font-black tracking-tight mb-1">Toko sudah jadi! 🎉</h3>
+            <p className="text-sm text-gray-400 mb-4">Ayo lakukan langkah pertama untuk mulai jualan.</p>
+
+            <div className="space-y-3">
+              {/* Task 1: Add Product */}
+              <Link to="/dashboard/products?add=true" className="flex items-center justify-between bg-white/10 hover:bg-white/15 transition-colors p-3 rounded-[16px] group ios-press">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center border border-white/5">
+                    <Package className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">Tambah Produk 1</p>
+                    <p className="text-[10px] text-gray-400">Buat etalase pertamamu</p>
+                  </div>
+                </div>
+                <div className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold shadow-sm group-hover:scale-110 transition-transform">
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </div>
+              </Link>
+
+              {/* Task 2: Share Link (Locked until product added) */}
+              <div className="flex items-center justify-between bg-white/5 p-3 rounded-[16px] opacity-50 grayscale">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center border border-white/5">
+                    <Copy className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">Bagikan Katalog</p>
+                    <p className="text-[10px] text-gray-400">Tunggu produk ditambah</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {totalProducts > 0 && totalViews === 0 && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          className="mb-5 bg-[#1C1917] rounded-[24px] p-5 shadow-xl shadow-black/10 text-white relative overflow-hidden"
+        >
+          <div className="absolute top-[-50%] right-[-10%] w-40 h-40 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="relative z-10">
+            <h3 className="text-lg font-black tracking-tight mb-1">Produk siap dijual! 🚀</h3>
+            <p className="text-sm text-gray-400 mb-4">Langkah terakhir: Undang pelanggan pertamamu.</p>
+
+            <div className="space-y-3">
+              {/* Task 1: Add Product (Done) */}
+              <div className="flex items-center justify-between p-2 rounded-[16px] opacity-40">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                    <Check className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <p className="text-sm font-medium text-white line-through">Tambah Produk 1</p>
+                </div>
+              </div>
+
+              {/* Task 2: Share Link */}
+              <button onClick={copyLink} className="w-full flex items-center justify-between bg-white/10 hover:bg-white/15 transition-colors p-3 rounded-[16px] group ios-press text-left">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center border border-white/5">
+                    {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-emerald-400" />}
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">Salin & Bagikan Katalog</p>
+                    <p className="text-[10px] text-gray-400">Share ke WA atau IG bio</p>
+                  </div>
+                </div>
+                <div className="px-3 py-1.5 rounded-full bg-emerald-500 text-white text-xs font-bold shadow-sm group-hover:scale-105 transition-transform">
+                  {copied ? 'Tersalin' : 'Salin'}
+                </div>
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* 2. PERIOD SELECTOR — iOS Segmented Control */}
       <div className="bg-[#EEECEA] p-1 rounded-[14px] flex items-center mb-5">
@@ -522,17 +621,17 @@ export default function Overview() {
         </div>
       </div>
 
-      {/* 8. RECENT PRODUCTS — list style, no card wrapper */}
+      {/* 8. TOP PRODUCTS (by Add to Cart) — Apple Music list style */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <p className="text-[10px] font-semibold text-[#A8A29E] uppercase tracking-widest">
-            Produk Terbaru
+            Produk Terlaris
           </p>
           <Link
             to="/dashboard/products"
             className="text-xs text-amber-500 font-semibold ios-press"
           >
-            Kelola
+            Lihat Semua
           </Link>
         </div>
 
@@ -548,50 +647,58 @@ export default function Overview() {
           </div>
         ) : (
           <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] overflow-hidden">
-            {products.map((product, index) => (
-              <div
-                key={product.id}
-                className={cn(
-                  'flex items-center gap-3 px-4 py-3',
-                  index < products.length - 1 && 'border-b border-black/[0.04]'
-                )}
-              >
-                <div className="w-10 h-10 rounded-[12px] flex-shrink-0 overflow-hidden bg-[#EEECEA] relative">
-                  {product.image_url ? (
-                    <img
-                      src={product.image_url}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <ProductPlaceholder
-                      name={product.name}
-                      themeColor={store.theme_color || '#F59E0B'}
-                      size="sm"
-                    />
+            {products
+              .map(p => {
+                const cartCount = allEvents.filter(
+                  (e: any) => e.event_type === 'add_to_cart' && e.product_id === p.id
+                ).length;
+                return { ...p, cartCount };
+              })
+              .sort((a, b) => b.cartCount - a.cartCount)
+              .map((product, index) => {
+              return (
+                <div
+                  key={product.id}
+                  className={cn(
+                    'flex items-center gap-3 px-4 py-3',
+                    index < products.length - 1 && 'border-b border-black/[0.04]'
                   )}
+                >
+                  <div className="w-6 text-center">
+                    <span className="text-xs font-bold text-[#A8A29E]">{index + 1}</span>
+                  </div>
+                  <div className="w-10 h-10 rounded-[12px] flex-shrink-0 overflow-hidden bg-[#EEECEA] relative">
+                    {product.image_url ? (
+                      <img
+                        src={product.image_url}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <ProductPlaceholder
+                        name={product.name}
+                        themeColor={store.theme_color || '#F59E0B'}
+                        size="sm"
+                      />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-[#1C1917] truncate">
+                      {product.name}
+                    </p>
+                    <p className="text-[10px] text-[#A8A29E] mt-0.5">
+                      {formatRupiah(product.price)}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0 bg-white px-2.5 py-1 rounded-[8px] border border-black/[0.04] shadow-sm">
+                    <p className="text-[10px] font-bold text-[#1C1917] flex items-center gap-1">
+                      <ShoppingCart className="w-3 h-3 text-amber-500" />
+                      {product.cartCount}x
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-[#1C1917] truncate">
-                    {product.name}
-                  </p>
-                  <p className="text-[10px] text-[#A8A29E] mt-0.5">
-                    {product.category}
-                  </p>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="text-xs font-bold text-[#1C1917]">
-                    {formatRupiah(product.price)}
-                  </p>
-                  <p className={cn(
-                    'text-[10px] mt-0.5 font-medium',
-                    product.is_available ? 'text-emerald-500' : 'text-red-400'
-                  )}>
-                    {product.is_available ? 'Tersedia' : 'Habis'}
-                  </p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

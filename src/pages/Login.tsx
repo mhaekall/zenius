@@ -28,6 +28,35 @@ export default function Login() {
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) });
 
+  // If user is already logged in, route them appropriately
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        // Assume store fetching is handled elsewhere, we just check if it's there
+        const currentStore = useAuthStore.getState().store;
+        if (currentStore) {
+          navigate('/dashboard', { replace: true });
+        } else {
+          // If we have a user but no store in state, let's fetch it to be sure
+          const { data: storeData } = await supabase
+            .from('stores')
+            .select('*')
+            .eq('owner_id', session.user.id)
+            .maybeSingle();
+
+          if (storeData) {
+            useAuthStore.getState().setStore(storeData);
+            navigate('/dashboard', { replace: true });
+          } else {
+            navigate('/setup', { replace: true });
+          }
+        }
+      }
+    };
+    checkUser();
+  }, [navigate]);
+
   const onSubmit = async (data: LoginFormData) => {
     setError('');
     
@@ -54,7 +83,7 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     setError('');
     // Use the current origin for redirect - works for both localhost and production domains
-    const redirectTo = `${window.location.origin}/dashboard`;
+    const redirectTo = `${window.location.origin}/setup`;
     console.log('[Google Login] Redirect URL:', redirectTo);
     
     const { error } = await supabase.auth.signInWithOAuth({
@@ -114,6 +143,12 @@ export default function Login() {
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
+            </div>
+
+            <div className="flex justify-end">
+              <Link to="/forgot-password" className="text-xs text-amber-600 font-semibold hover:underline">
+                Lupa Password?
+              </Link>
             </div>
 
             <AnimatePresence>

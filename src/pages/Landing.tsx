@@ -107,6 +107,70 @@ export default function Landing() {
         </motion.div>
       </section>
 
+      {/* 2.5 Social Proof */}
+      <section className="py-12 border-t border-black/[0.04] bg-white overflow-hidden">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <p className="text-center text-xs font-bold text-[#A8A29E] uppercase tracking-widest mb-8">
+            Dipercaya oleh UMKM se-Indonesia
+          </p>
+          
+          <div className="flex flex-wrap justify-center gap-6 md:gap-12 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
+            {/* Fake logos representing trust */}
+            <div className="flex items-center gap-2 font-black text-xl text-[#1C1917]"><div className="w-8 h-8 bg-amber-500 rounded-full"></div> Kopi Senja</div>
+            <div className="flex items-center gap-2 font-black text-xl text-[#1C1917] tracking-tighter"><span className="text-green-600 text-2xl">⚡</span> WARTEG KILAT</div>
+            <div className="flex items-center gap-2 font-black text-xl text-[#1C1917] italic">Bakmi Bude</div>
+            <div className="flex items-center gap-2 font-black text-xl text-[#1C1917]"><div className="w-6 h-6 bg-blue-600 rotate-45"></div> CUCI SEPATU</div>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 mt-16 max-w-4xl mx-auto">
+            {/* Testimonial 1 */}
+            <div className="bg-[#F5F4F0] p-6 rounded-[24px]">
+              <div className="flex text-amber-400 mb-3">★★★★★</div>
+              <p className="text-sm text-[#374151] mb-4 font-medium leading-relaxed">
+                "Dulu bingung kirim foto menu satu-satu di WA. Sekarang tinggal kasih link, pelanggan langsung pesen sendiri. Omset naik 30%!"
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-200 rounded-full flex items-center justify-center text-amber-700 font-bold">A</div>
+                <div>
+                  <p className="text-xs font-bold text-[#1C1917]">Andi S.</p>
+                  <p className="text-[10px] text-[#78716C]">Owner Kopi Senja</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Testimonial 2 */}
+            <div className="bg-[#F5F4F0] p-6 rounded-[24px]">
+              <div className="flex text-amber-400 mb-3">★★★★★</div>
+              <p className="text-sm text-[#374151] mb-4 font-medium leading-relaxed">
+                "Sumpah gampang banget pakenya. Gak nyampe 5 menit toko udah jadi. Pelanggan juga suka karena gak perlu download apk."
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-200 rounded-full flex items-center justify-center text-green-700 font-bold">B</div>
+                <div>
+                  <p className="text-xs font-bold text-[#1C1917]">Bude Marni</p>
+                  <p className="text-[10px] text-[#78716C]">Warung Nasi Bude</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Testimonial 3 */}
+            <div className="bg-[#F5F4F0] p-6 rounded-[24px]">
+              <div className="flex text-amber-400 mb-3">★★★★★</div>
+              <p className="text-sm text-[#374151] mb-4 font-medium leading-relaxed">
+                "Bisa atur warna sesuai tema cafe kita. Kelihatan mahal dan profesional banget, padahal pakainya gratis. Mantap!"
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-200 rounded-full flex items-center justify-center text-blue-700 font-bold">C</div>
+                <div>
+                  <p className="text-xs font-bold text-[#1C1917]">Citra</p>
+                  <p className="text-[10px] text-[#78716C]">Manajer Cafe Kita</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* 3. Steps */}
       <section className="bg-[#F5F4F0] py-20 border-t border-black/[0.04]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
@@ -131,6 +195,98 @@ export default function Landing() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* 3.5. Pricing Section (Added for Monetization Readiness) */}
+      <section className="bg-[#FAFAF8] py-20 border-t border-black/[0.04]">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-black text-[#1C1917] mb-3 tracking-tight">
+              Investasi Kecil, Untung Besar.
+            </h2>
+            <p className="text-[#78716C] max-w-xl mx-auto text-lg">
+              Pilih paket yang sesuai dengan ukuran bisnis Anda. 
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            {/* Free */}
+            <div className="bg-white rounded-[32px] p-6 sm:p-8 border border-black/[0.06] shadow-sm flex flex-col">
+              <h3 className="text-xl font-bold text-[#1C1917] mb-2">Gratis</h3>
+              <p className="text-sm text-[#78716C] mb-6">Mulai jualan online tanpa modal.</p>
+              <div className="mb-8">
+                <span className="text-4xl font-black text-[#1C1917]">Rp0</span>
+                <span className="text-sm text-[#A8A29E] font-medium">/ selamanya</span>
+              </div>
+              <ul className="space-y-3 mb-8 flex-1">
+                <li className="flex items-center gap-3 text-sm text-[#374151]">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#A8A29E] shrink-0" /> Maksimal 15 Produk
+                </li>
+                <li className="flex items-center gap-3 text-sm text-[#374151]">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#A8A29E] shrink-0" /> Order via WhatsApp
+                </li>
+                <li className="flex items-center gap-3 text-sm text-[#374151]">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#A8A29E] shrink-0" /> Watermark Zenius
+                </li>
+              </ul>
+              <Link to="/register">
+                <Button variant="outline" className="w-full rounded-[16px] py-3.5">Mulai Gratis</Button>
+              </Link>
+            </div>
+
+            {/* Juragan (Pro) */}
+            <div className="bg-gradient-to-b from-amber-50 to-white rounded-[32px] p-6 sm:p-8 border-2 border-amber-400 shadow-xl relative flex flex-col md:scale-105 z-10">
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-1 rounded-full text-[11px] font-black uppercase tracking-widest shadow-sm whitespace-nowrap">
+                Paling Laris 🔥
+              </div>
+              <h3 className="text-xl font-bold text-[#1C1917] mb-2">Juragan</h3>
+              <p className="text-sm text-[#78716C] mb-6">Tingkatkan omset tanpa batasan.</p>
+              <div className="mb-8">
+                <span className="text-4xl font-black text-[#1C1917]">Rp39k</span>
+                <span className="text-sm text-[#A8A29E] font-medium">/ bln*</span>
+              </div>
+              <ul className="space-y-3 mb-8 flex-1">
+                <li className="flex items-center gap-3 text-sm font-medium text-[#1C1917]">
+                  <div className="w-4 h-4 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">✓</div> Produk Tanpa Batas
+                </li>
+                <li className="flex items-center gap-3 text-sm font-medium text-[#1C1917]">
+                  <div className="w-4 h-4 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">✓</div> Tanpa Watermark
+                </li>
+                <li className="flex items-center gap-3 text-sm font-medium text-[#1C1917]">
+                  <div className="w-4 h-4 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">✓</div> Terima Pembayaran QRIS
+                </li>
+              </ul>
+              <Link to="/register">
+                <Button className="w-full rounded-[16px] py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 border-0">Daftar Juragan</Button>
+              </Link>
+            </div>
+
+            {/* Bos (Pro Max) */}
+            <div className="bg-[#1C1917] rounded-[32px] p-6 sm:p-8 border border-[#333] shadow-md flex flex-col text-white">
+              <h3 className="text-xl font-bold text-white mb-2">Bos</h3>
+              <p className="text-sm text-gray-400 mb-6">Skala bisnis dengan brand mandiri.</p>
+              <div className="mb-8">
+                <span className="text-4xl font-black text-white">Rp99k</span>
+                <span className="text-sm text-gray-500 font-medium">/ bln*</span>
+              </div>
+              <ul className="space-y-3 mb-8 flex-1">
+                <li className="flex items-center gap-3 text-sm text-gray-300">
+                  <div className="w-4 h-4 rounded-full bg-[#333] text-white flex items-center justify-center shrink-0">✓</div> Semua fitur Juragan
+                </li>
+                <li className="flex items-center gap-3 text-sm text-gray-300">
+                  <div className="w-4 h-4 rounded-full bg-[#333] text-white flex items-center justify-center shrink-0">✓</div> Domain Sendiri (.com)
+                </li>
+                <li className="flex items-center gap-3 text-sm text-gray-300">
+                  <div className="w-4 h-4 rounded-full bg-[#333] text-white flex items-center justify-center shrink-0">✓</div> Kelola 3 Cabang Toko
+                </li>
+              </ul>
+              <Link to="/register">
+                <Button variant="secondary" className="w-full rounded-[16px] py-3.5 bg-white text-black hover:bg-gray-100 border-0">Hubungi Kami</Button>
+              </Link>
+            </div>
+          </div>
+          <p className="text-center text-xs text-[#A8A29E] mt-6">*Harga ditagih tahunan. Tersedia juga paket bulanan.</p>
         </div>
       </section>
 

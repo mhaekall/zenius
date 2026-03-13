@@ -1,12 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Pencil, Trash2, Package, ToggleLeft, ToggleRight, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Package, ToggleLeft, ToggleRight, Search, GripVertical } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import imageCompression from 'browser-image-compression';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
 import { Button, Input, Textarea, Card, Modal, Badge } from '../../components/ui';
@@ -264,6 +265,41 @@ export default function Products() {
     toast.success('Dihapus');
   };
 
+  const handleDragEnd = async (result: any) => {
+    if (!result.destination) return;
+    
+    const items = Array.from(products);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    // Update local state immediately for snappy UX
+    setProducts(items);
+
+    // Prepare batch update for database
+    const updates = items.map((item, index) => ({
+      id: item.id,
+      sort_order: index,
+      // Need to include required fields for upsert or just use a loop for updates
+    }));
+
+    // Perform updates in background
+    try {
+      // Supabase JS doesn't have a bulk update for different rows easily without RPC, 
+      // so we do it one by one but don't await each to block UI
+      for (const update of updates) {
+        supabase
+          .from('products')
+          .update({ sort_order: update.sort_order })
+          .eq('id', update.id)
+          .then(); // fire and forget
+      }
+    } catch (err) {
+      console.error('Failed to save order', err);
+      toast.error('Gagal menyimpan urutan');
+      // Ideally revert state here on failure, but keeping it simple for now
+    }
+  };
+
   const filteredProducts = (products || []).filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'Semua' || p.category === selectedCategory;
@@ -327,63 +363,128 @@ export default function Products() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <AnimatePresence mode="popLayout">
-              {filteredProducts.map((product) => (
-                <motion.div
-                  key={product.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 30, mass: 0.8 }}
-                >
-                <div className="bg-[#F5F4F0] rounded-[18px] overflow-hidden border border-black/[0.06] shadow-ios-sm h-full flex flex-col">
-                  <div className="aspect-[4/3] bg-[#EEECEA] relative">
-                    {product.image_url ? (
-                      <img 
-                        src={product.image_url} 
-                        alt={product.name} 
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : (
-                      <ProductPlaceholder 
-                        name={product.name}
-                        themeColor={store?.theme_color || '#F59E0B'}
-                      />
-                    )}
-                    <div className="absolute top-2 right-2">
-                      <Badge variant={product.is_available ? 'gray' : 'red'}>
-                        {product.is_available ? 'Ada' : 'Habis'}
-                      </Badge>
+          {searchQuery || selectedCategory !== 'Semua' ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <AnimatePresence mode="popLayout">
+                {filteredProducts.map((product) => (
+                  <motion.div
+                    key={product.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 30, mass: 0.8 }}
+                  >
+                  <div className="bg-[#F5F4F0] rounded-[18px] overflow-hidden border border-black/[0.06] shadow-ios-sm h-full flex flex-col">
+                    <div className="aspect-[4/3] bg-[#EEECEA] relative">
+                      {product.image_url ? (
+                        <img 
+                          src={product.image_url} 
+                          alt={product.name} 
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <ProductPlaceholder 
+                          name={product.name}
+                          themeColor={store?.theme_color || '#F59E0B'}
+                        />
+                      )}
+                      <div className="absolute top-2 right-2">
+                        <Badge variant={product.is_available ? 'gray' : 'red'}>
+                          {product.is_available ? 'Ada' : 'Habis'}
+                        </Badge>
+                      </div>
                     </div>
-                  </div>
-                  <div className="p-2.5 flex-1 flex flex-col">
-                    <p className="text-xs text-[#78716C] mb-0.5">{product.category}</p>
-                    <h3 className="font-semibold text-[#1C1917] text-sm leading-tight flex-1 line-clamp-2">{product.name}</h3>
-                    <p className="text-[#1C1917] font-bold text-sm mt-1">{formatRupiah(product.price)}</p>
-                    
-                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-black/[0.04]">
-                      <button onClick={() => toggleAvailable(product)} className="text-[#A8A29E] hover:text-[#1C1917] transition-colors ios-press">
-                        {product.is_available ? <ToggleRight className="w-5 h-5 text-[#1C1917]" /> : <ToggleLeft className="w-5 h-5" />}
-                      </button>
-                      <div className="flex gap-1.5">
-                        <button onClick={() => openEdit(product)} className="text-[#A8A29E] hover:text-[#1C1917] p-1 bg-[#EEECEA] rounded-[8px] transition-colors ios-press">
-                          <Pencil className="w-3.5 h-3.5" />
+                    <div className="p-2.5 flex-1 flex flex-col">
+                      <p className="text-xs text-[#78716C] mb-0.5">{product.category}</p>
+                      <h3 className="font-semibold text-[#1C1917] text-sm leading-tight flex-1 line-clamp-2">{product.name}</h3>
+                      <p className="text-[#1C1917] font-bold text-sm mt-1">{formatRupiah(product.price)}</p>
+                      
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-black/[0.04]">
+                        <button onClick={() => toggleAvailable(product)} className="text-[#A8A29E] hover:text-[#1C1917] transition-colors ios-press">
+                          {product.is_available ? <ToggleRight className="w-5 h-5 text-[#1C1917]" /> : <ToggleLeft className="w-5 h-5" />}
                         </button>
-                        <button onClick={() => deleteProduct(product.id)} className="text-[#A8A29E] hover:text-red-500 p-1 bg-[#EEECEA] rounded-[8px] transition-colors ios-press">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex gap-1.5">
+                          <button onClick={() => openEdit(product)} className="text-[#A8A29E] hover:text-[#1C1917] p-1 bg-[#EEECEA] rounded-[8px] transition-colors ios-press">
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => deleteProduct(product.id)} className="text-[#A8A29E] hover:text-red-500 p-1 bg-[#EEECEA] rounded-[8px] transition-colors ios-press">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
+                </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Droppable droppableId="products-list">
+                {(provided) => (
+                  <div 
+                    {...provided.droppableProps} 
+                    ref={provided.innerRef}
+                    className="flex flex-col gap-3"
+                  >
+                    {filteredProducts.map((product, index) => (
+                      <Draggable key={product.id} draggableId={product.id} index={index}>
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            className={cn(
+                              "bg-white rounded-[18px] border border-black/[0.06] p-3 flex items-center gap-3 transition-shadow",
+                              snapshot.isDragging ? "shadow-ios-lg z-50 ring-2 ring-[#F59E0B]/20" : "shadow-sm"
+                            )}
+                            style={provided.draggableProps.style}
+                          >
+                            <div 
+                              {...provided.dragHandleProps}
+                              className="w-8 h-10 flex items-center justify-center text-[#A8A29E] active:text-[#1C1917] active:bg-[#EEECEA] rounded-lg transition-colors"
+                            >
+                              <GripVertical className="w-5 h-5" />
+                            </div>
+                            
+                            <div className="w-14 h-14 rounded-[12px] bg-[#EEECEA] overflow-hidden flex-shrink-0 relative">
+                              {product.image_url ? (
+                                <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <ProductPlaceholder name={product.name} themeColor={store?.theme_color || '#F59E0B'} size="sm" />
+                              )}
+                              {!product.is_available && (
+                                <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px]" />
+                              )}
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
+                              <p className={cn("text-sm font-semibold truncate", !product.is_available ? "text-[#A8A29E]" : "text-[#1C1917]")}>
+                                {product.name}
+                              </p>
+                              <p className="text-[11px] text-[#A8A29E] font-medium">{formatRupiah(product.price)}</p>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <button onClick={() => toggleAvailable(product)} className="text-[#A8A29E] hover:text-[#1C1917] p-1 ios-press">
+                                {product.is_available ? <ToggleRight className="w-5 h-5 text-emerald-500" /> : <ToggleLeft className="w-5 h-5" />}
+                              </button>
+                              <button onClick={() => openEdit(product)} className="text-[#A8A29E] hover:text-[#1C1917] p-1.5 bg-[#F5F4F0] rounded-[8px] ios-press">
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
+          )}
         
         {/* Pagination Controls */}
         {totalCount > PRODUCTS_PER_PAGE && (

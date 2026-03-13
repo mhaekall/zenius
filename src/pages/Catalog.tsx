@@ -257,6 +257,7 @@ export default function Catalog() {
   const [loading, setLoading] = useState(true);
   const [cartOpen, setCartOpen] = useState(false);
   const [qrisOpen, setQrisOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -752,6 +753,71 @@ export default function Catalog() {
               </div>
               <div className="px-5 pb-5">
                 <img src={store.qris_url} alt="QRIS" className="w-full rounded-2xl" />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      {/* 8. STORE INFO MODAL */}
+      <AnimatePresence>
+        {infoOpen && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+              onClick={() => setInfoOpen(false)}
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ opacity: 0.9, scale: 0.9 }}
+              className="relative bg-[#FAFAF8] rounded-[28px] p-6 w-full max-w-xs shadow-ios-lg border border-white/50"
+            >
+              <button 
+                onClick={() => setInfoOpen(false)} 
+                className="absolute top-4 right-4 p-1.5 bg-[#EEECEA] rounded-full text-[#78716C] ios-press"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              
+              <div className="flex flex-col items-center text-center mb-6">
+                {store.logo_url ? (
+                  <img src={store.logo_url} className="w-16 h-16 rounded-full object-cover mb-3 ring-2" style={{ '--tw-ring-color': themeColor } as any} />
+                ) : (
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold mb-3" style={{ background: themeColor }}>
+                    {store.name.charAt(0)}
+                  </div>
+                )}
+                <h3 className="font-bold text-[#1C1917] text-lg leading-tight">{store.name}</h3>
+                <p className="text-xs text-[#78716C] mt-1">{store.description}</p>
+              </div>
+
+              <div className="space-y-4 text-left">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[#EEECEA] flex items-center justify-center flex-shrink-0">
+                    <MapPin className="w-4 h-4 text-[#78716C]" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-[#A8A29E] uppercase tracking-wider">Lokasi</p>
+                    <p className="text-xs text-[#1C1917] font-medium leading-relaxed">
+                      {store.address || 'Alamat belum diatur'}, {store.city || ''}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[#EEECEA] flex items-center justify-center flex-shrink-0">
+                    <Clock className="w-4 h-4 text-[#78716C]" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-[#A8A29E] uppercase tracking-wider">Jam Operasional</p>
+                    <p className="text-xs text-[#1C1917] font-medium leading-relaxed">
+                      {store.operating_hours || 'Belum diatur'}
+                    </p>
+                  </div>
+                </div>
               </div>
             </motion.div>
           </div>

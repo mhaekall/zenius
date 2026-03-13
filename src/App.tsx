@@ -28,6 +28,8 @@ const lazyWithRetry = (componentImport: () => Promise<any>) =>
 // Lazy loaded pages (Code Splitting)
 const Login = lazyWithRetry(() => import('./pages/Login'));
 const Register = lazyWithRetry(() => import('./pages/Register'));
+const ForgotPassword = lazyWithRetry(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazyWithRetry(() => import('./pages/ResetPassword'));
 const Overview = lazyWithRetry(() => import('./pages/dashboard/Overview'));
 const Products = lazyWithRetry(() => import('./pages/dashboard/Products'));
 const Settings = lazyWithRetry(() => import('./pages/dashboard/Settings'));
@@ -212,6 +214,8 @@ export default function App() {
             <Route path="/blueprint" element={<BlueprintFlow />} />
             <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
             <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+            <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} />
+            <Route path="/reset-password" element={<GuestRoute><ResetPassword /></GuestRoute>} />
             <Route path="/setup" element={<Setup />} />
             <Route path="/c/:slug" element={<Catalog />} />
           </Route>
