@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Camera, Save, LogOut, ChevronRight, Lock, Eye, EyeOff } from 'lucide-react';
+import { Camera, Save, LogOut, ChevronRight, Lock, Eye, EyeOff, MapPin, Clock, Trash2, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -15,13 +15,16 @@ import { sanitizeSlug, cn } from '../../lib/utils';
 import type { Store } from '../../types';
 
 const settingsSchema = z.object({
-  name: z.string().min(2),
+  name: z.string().min(2, 'Nama toko minimal 2 karakter'),
   description: z.string().optional(),
   slug: z.string().min(3).regex(/^[a-z0-9-]+$/, 'Hanya huruf kecil, angka, dan dash'),
   wa_number: z.string()
     .min(8, 'Nomor WhatsApp minimal 8 digit')
-    .regex(/^(0|62)?[0-9]{8,12}$/, 'Format nomor tidak valid (contoh: 628xxxxxxxxxx atau 08xxxxxxxxxx)'),
+    .regex(/^(0|62)?[0-9]{8,12}$/, 'Format nomor tidak valid'),
   theme_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Format warna tidak valid'),
+  address: z.string().optional(),
+  operating_hours: z.string().optional(),
+  is_active: z.boolean().default(true),
 });
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
@@ -93,8 +96,39 @@ export default function Settings() {
       slug: store?.slug || '',
       wa_number: store?.wa_number || '',
       theme_color: store?.theme_color || '#F59E0B',
+      address: store?.address || '',
+      operating_hours: store?.operating_hours || '',
+      is_active: store?.is_active ?? true,
     },
   });
+
+  const isActive = watch('is_active');
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== store?.slug) {
+      toast.error('Konfirmasi slug tidak cocok');
+      return;
+    }
+
+    const toastId = toast.loading('Menghapus akun...');
+    try {
+      // 1. Delete products (cascade should handle this but let's be safe)
+      await supabase.from('products').delete().eq('store_id', store?.id);
+      
+      // 2. Delete store
+      const { error: storeError } = await supabase.from('stores').delete().eq('id', store?.id);
+      if (storeError) throw storeError;
+
+      // 3. Sign out
+      await signOut();
+      toast.success('Akun dan toko berhasil dihapus', { id: toastId });
+      navigate('/');
+    } catch (err: any) {
+      toast.error(`Gagal menghapus: ${err.message}`, { id: toastId });
+    }
+  };
 
   const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -244,8 +278,11 @@ export default function Settings() {
             </div>
 
             {/* Tema Row */}
-            <div className="flex items-center justify-between py-3 px-4 cursor-pointer">
-              <span className="text-sm font-medium text-[#1C1917]">Warna Aksen</span>
+            <div className="flex items-center justify-between py-3 px-4 border-b border-black/[0.04]">
+              <div className="flex items-center gap-3">
+                <Palette className="w-4 h-4 text-[#A8A29E]" />
+                <span className="text-sm font-medium text-[#1C1917]">Warna Aksen</span>
+              </div>
               <div className="flex items-center gap-2">
                 <input 
                   type="color" 
@@ -255,13 +292,42 @@ export default function Settings() {
               </div>
             </div>
 
+            {/* Status Toko Row */}
+            <div className="flex items-center justify-between py-3 px-4">
+              <div className="flex items-center gap-3">
+                <Globe className={cn("w-4 h-4", isActive ? "text-emerald-500" : "text-[#A8A29E]")} />
+                <div>
+                  <span className="text-sm font-medium text-[#1C1917]">Status Toko</span>
+                  <p className="text-[10px] text-[#A8A29E] font-bold uppercase tracking-tighter">
+                    {isActive ? "Online & Menerima Order" : "Offline / Tutup"}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setValue('is_active', !isActive)}
+                className={cn(
+                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ios-press",
+                  isActive ? "bg-[#34C759]" : "bg-[#EEECEA]"
+                )}
+              >
+                <span
+                  className={cn(
+                    "inline-block h-5 w-5 transform rounded-full bg-white shadow-ios-sm transition-transform duration-200",
+                    isActive ? "translate-x-5" : "translate-x-0.5"
+                  )}
+                />
+              </button>
+              <input type="hidden" {...register('is_active')} />
+            </div>
+
           </div>
         </section>
 
         {/* Section: Informasi Dasar */}
         <section>
           <h2 className="text-ios-caption uppercase tracking-widest text-[#A8A29E] mb-1.5 px-3">Informasi Dasar</h2>
-          <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] shadow-ios-sm overflow-hidden px-4 py-2 space-y-3">
+          <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] shadow-ios-sm overflow-hidden px-4 py-2 space-y-3 pb-4">
             <Input
               label="Nama Toko"
               {...register('name')}
@@ -287,10 +353,25 @@ export default function Settings() {
               hint="Format: 628xxxxxxxxx"
               className="bg-[#EEECEA]"
             />
+            <Input
+              label="Alamat Toko"
+              icon={<MapPin className="w-4 h-4" />}
+              placeholder="Misal: Jl. Kenangan No. 123, Jakarta"
+              {...register('address')}
+              className="bg-[#EEECEA]"
+            />
+            <Input
+              label="Jam Operasional"
+              icon={<Clock className="w-4 h-4" />}
+              placeholder="Misal: Setiap Hari, 08:00 - 21:00"
+              {...register('operating_hours')}
+              className="bg-[#EEECEA]"
+            />
             <Textarea 
-              label="Deskripsi (opsional)" 
+              label="Deskripsi Toko (Bio)" 
               {...register('description')} 
               className="bg-[#EEECEA]"
+              placeholder="Ceritakan tentang tokomu kepada pelanggan..."
             />
           </div>
         </section>
@@ -368,6 +449,27 @@ export default function Settings() {
           </div>
         </section>
 
+        {/* Section: Danger Zone */}
+        <section className="mt-8">
+          <h2 className="text-ios-caption uppercase tracking-widest text-red-500 mb-1.5 px-3">Danger Zone</h2>
+          <div className="bg-red-50/50 rounded-[18px] border border-red-100 shadow-ios-sm overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setIsDeleteModalOpen(true)}
+              className="w-full flex items-center justify-between py-3.5 px-4 cursor-pointer active:bg-red-100 transition-colors"
+            >
+              <div className="flex items-center text-red-600">
+                <Trash2 className="w-4 h-4 mr-3" />
+                <span className="text-sm font-bold">Hapus Akun & Toko</span>
+              </div>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+          <p className="text-[10px] text-[#A8A29E] mt-2 px-3 leading-relaxed">
+            Menghapus akun akan menghapus seluruh data produk, pengaturan, dan katalog Anda secara permanen. Tindakan ini tidak dapat dibatalkan.
+          </p>
+        </section>
+
       </form>
       )}
 
@@ -412,6 +514,58 @@ export default function Settings() {
                 </Button>
               </div>
             </form>
+          </Modal>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Account Modal */}
+      <AnimatePresence>
+        {isDeleteModalOpen && (
+          <Modal
+            open={isDeleteModalOpen}
+            onClose={() => {
+              setIsDeleteModalOpen(false);
+              setDeleteConfirmText('');
+            }}
+            title="Hapus Akun"
+          >
+            <div className="space-y-4">
+              <div className="bg-red-50 p-4 rounded-2xl border border-red-100">
+                <p className="text-sm text-red-800 leading-relaxed font-medium">
+                  Apakah Anda yakin ingin menghapus akun? Seluruh produk dan data toko <strong>{store?.name}</strong> akan hilang selamanya.
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-[#78716C] uppercase tracking-wider">
+                  Ketik <span className="text-[#1C1917] select-all">"{store?.slug}"</span> untuk konfirmasi:
+                </label>
+                <input 
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="Ketik slug tokomu..."
+                  className="w-full px-4 py-3 rounded-xl bg-[#F5F4F0] border border-black/[0.06] text-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition-all"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button 
+                  variant="secondary" 
+                  onClick={() => setIsDeleteModalOpen(false)} 
+                  className="flex-1"
+                >
+                  Batal
+                </Button>
+                <Button 
+                  onClick={handleDeleteAccount} 
+                  disabled={deleteConfirmText !== store?.slug}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white border-0 shadow-lg shadow-red-500/20 disabled:bg-red-200"
+                >
+                  Hapus Permanen
+                </Button>
+              </div>
+            </div>
           </Modal>
         )}
       </AnimatePresence>

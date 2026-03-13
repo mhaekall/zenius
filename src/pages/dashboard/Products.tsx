@@ -20,12 +20,10 @@ const productSchema = z.object({
   name: z.string().min(2, 'Nama minimal 2 karakter'),
   description: z.string().optional(),
   price: z.coerce.number().min(100, 'Harga minimal Rp 100'),
-  category: z.string().default('Lainnya'),
+  category: z.string().min(1, 'Pilih atau tulis kategori'),
   is_available: z.boolean().default(true),
 });
 type ProductFormData = z.infer<typeof productSchema>;
-
-const CATEGORIES = ['Makanan', 'Minuman', 'Cemilan', 'Paket', 'Lainnya'];
 
 export default function Products() {
   const { store } = useAuthStore();
@@ -36,6 +34,10 @@ export default function Products() {
   const [selectedCategory, setSelectedCategory] = useState('Semua');
   const [modalOpen, setModalOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
+  
+  // Custom categories state
+  const [dynamicCategories, setDynamicCategories] = useState<string[]>(['Makanan', 'Minuman', 'Cemilan', 'Paket']);
+  const [isAddingCustomCategory, setIsAddingCustomCategory] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -58,6 +60,7 @@ export default function Products() {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ProductFormData>({ 
     resolver: zodResolver(productSchema),
@@ -104,6 +107,13 @@ export default function Products() {
     
     const { data } = await dataQuery;
     setProducts(data || []);
+
+    // Update dynamic categories from existing products
+    if (data) {
+      const existingCats = Array.from(new Set(data.map(p => p.category)));
+      setDynamicCategories(prev => Array.from(new Set([...prev, ...existingCats])));
+    }
+
     setLoading(false);
   };
 
@@ -140,7 +150,8 @@ export default function Products() {
     setImageFile(null);
     setImagePreview(null);
     setIsAvailable(true);
-    reset({ name: '', description: '', price: 0, category: 'Lainnya', is_available: true });
+    setIsAddingCustomCategory(false);
+    reset({ name: '', description: '', price: 0, category: 'Makanan', is_available: true });
     setModalOpen(true);
   };
 
@@ -149,6 +160,7 @@ export default function Products() {
     setImageFile(null);
     setImagePreview(product.image_url);
     setIsAvailable(product.is_available);
+    setIsAddingCustomCategory(!['Makanan', 'Minuman', 'Cemilan', 'Paket'].includes(product.category));
     reset({
       name: product.name,
       description: product.description || '',
@@ -333,8 +345,8 @@ export default function Products() {
             className="w-full pl-10 pr-4 py-2 bg-[#EEECEA] rounded-[14px] text-sm text-[#1C1917] placeholder:text-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-[#F59E0B] transition-all"
           />
         </div>
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
-          {['Semua', ...CATEGORIES].map((cat) => (
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide text-nowrap">
+          {['Semua', ...dynamicCategories].map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
@@ -546,9 +558,39 @@ export default function Products() {
                   <Input label="Harga (Rp)" type="number" placeholder="15000" {...register('price')} error={errors.price?.message} />
                   <div className="flex flex-col gap-1">
                     <label className="text-sm font-medium text-[#78716C]">Kategori</label>
-                    <select {...register('category')} className="w-full rounded-[14px] border-0 bg-[#EEECEA] px-3.5 py-3 text-sm text-[#1C1917] focus:outline-none focus:ring-2 focus:ring-[#F59E0B] transition-all">
-                      {CATEGORIES.map((c) => (<option key={c} value={c}>{c}</option>))}
-                    </select>
+                    {!isAddingCustomCategory ? (
+                      <select 
+                        {...register('category')} 
+                        onChange={(e) => {
+                          if (e.target.value === 'ADD_NEW') {
+                            setIsAddingCustomCategory(true);
+                            setValue('category', '');
+                          } else {
+                            register('category').onChange(e);
+                          }
+                        }}
+                        className="w-full rounded-[14px] border-0 bg-[#EEECEA] px-3.5 py-3 text-sm text-[#1C1917] focus:outline-none focus:ring-2 focus:ring-[#F59E0B] transition-all"
+                      >
+                        {dynamicCategories.map((c) => (<option key={c} value={c}>{c}</option>))}
+                        <option value="ADD_NEW">+ Kategori Baru...</option>
+                      </select>
+                    ) : (
+                      <div className="relative">
+                        <input 
+                          {...register('category')}
+                          placeholder="Nama kategori..."
+                          autoFocus
+                          className="w-full rounded-[14px] border-0 bg-[#EEECEA] px-3.5 py-3 text-sm text-[#1C1917] focus:outline-none focus:ring-2 focus:ring-[#F59E0B] transition-all"
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => setIsAddingCustomCategory(false)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-amber-600 uppercase"
+                        >
+                          Batal
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
