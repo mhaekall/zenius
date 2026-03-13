@@ -3,7 +3,7 @@ name: Deploy to Cloudflare Pages
 on:
   push:
     branches:
-      - local-workspace
+      - main
 
 jobs:
   deploy:
@@ -42,4 +42,4 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: openmenu
           directory: dist
-          branch: local-workspace
+          branch: main
