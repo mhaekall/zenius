@@ -12,6 +12,9 @@ import { Button, Input } from '../components/ui';
 const registerSchema = z.object({
   email: z.string().email('Email tidak valid'),
   password: z.string().min(6, 'Password minimal 6 karakter'),
+  terms: z.literal(true, {
+    errorMap: () => ({ message: 'Anda harus menyetujui Ketentuan Layanan' }),
+  }),
 });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
@@ -120,6 +123,19 @@ export default function Register() {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+
+            <div className="flex items-start gap-2 px-1">
+              <input
+                type="checkbox"
+                id="terms"
+                {...register('terms')}
+                className="mt-1 w-4 h-4 rounded border-gray-300 text-amber-500 focus:ring-amber-500"
+              />
+              <label htmlFor="terms" className="text-[11px] text-[#78716C] leading-tight">
+                Saya menyetujui <button type="button" className="text-[#1C1917] font-bold hover:underline">Ketentuan Layanan</button> dan <button type="button" className="text-[#1C1917] font-bold hover:underline">Kebijakan Privasi</button> OpenMenu.
+              </label>
+            </div>
+            {errors.terms && <p className="text-[10px] text-red-500 px-1">{errors.terms.message}</p>}
 
             <AnimatePresence>
               {error && (

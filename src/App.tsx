@@ -35,6 +35,7 @@ const Products = lazyWithRetry(() => import('./pages/dashboard/Products'));
 const Settings = lazyWithRetry(() => import('./pages/dashboard/Settings'));
 const QRCodePage = lazyWithRetry(() => import('./pages/dashboard/QRCode'));
 const Upgrade = lazyWithRetry(() => import('./pages/dashboard/Upgrade'));
+const Analytics = lazyWithRetry(() => import('./pages/dashboard/Analytics'));
 
 // Performance-friendly Loading Spinner
 const PageLoader = () => (
@@ -231,6 +232,7 @@ export default function App() {
             <Route path="settings" element={<Settings />} />
             <Route path="qrcode" element={<QRCodePage />} />
             <Route path="upgrade" element={<Upgrade />} />
+            <Route path="analytics" element={<Analytics />} />
           </Route>
 
           {/* Fallback */}

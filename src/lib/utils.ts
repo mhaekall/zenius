@@ -81,3 +81,23 @@ export function truncate(text: string, maxLength: number): string {
 export function getStorageUrl(supabaseUrl: string, bucket: string, path: string): string {
   return `${supabaseUrl}/storage/v1/object/public/${bucket}/${path}`;
 }
+
+/**
+ * Optimize Image URL (Supabase or Unsplash)
+ */
+export function getOptimizedImage(url: string | null | undefined, width = 400): string {
+  if (!url) return '';
+  
+  // 1. Jika Unsplash, gunakan parameter bawaan (Sangat Efektif)
+  if (url.includes('images.unsplash.com')) {
+    const baseUrl = url.split('?')[0];
+    return `${baseUrl}?auto=format&fit=crop&q=75&w=${width}&fm=webp`;
+  }
+  
+  // 2. Jika Supabase, gunakan fitur built-in transformation (Jika plan mendukung)
+  if (url.includes('supabase.co/storage/v1/object/public')) {
+    return `${url}?width=${width}&quality=75&format=webp`;
+  }
+  
+  return url;
+}

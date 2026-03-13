@@ -252,6 +252,40 @@ export default function Settings() {
       {!store && !user ? <SettingsSkeleton /> : (
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pb-10">
         
+        {/* Section: Live Preview (Apple-style context) */}
+        <section className="px-1">
+          <h2 className="text-ios-caption uppercase tracking-widest text-[#A8A29E] mb-2.5">Live Preview</h2>
+          <div className="bg-white rounded-[28px] p-4 border border-black/[0.04] shadow-ios-md flex items-center gap-4 overflow-hidden relative group">
+            <div 
+              className="w-20 h-28 rounded-xl shrink-0 overflow-hidden border border-black/[0.06] shadow-sm relative transition-transform group-hover:scale-[1.02]"
+              style={{ background: '#F2F2F7' }}
+            >
+              {/* Miniature Catalog Preview */}
+              <div className="h-8 w-full" style={{ background: watch('theme_color') }} />
+              <div className="p-2 space-y-2">
+                <div className="w-10 h-10 bg-white rounded-lg mx-auto -mt-6 border border-black/[0.02] overflow-hidden">
+                  {logoPreview ? <img src={logoPreview} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-[#EEECEA]" />}
+                </div>
+                <div className="w-10 h-1.5 bg-[#1C1917] rounded-full mx-auto" />
+                <div className="grid grid-cols-2 gap-1">
+                  <div className="aspect-square bg-white rounded-md border border-black/[0.02]" />
+                  <div className="aspect-square bg-white rounded-md border border-black/[0.02]" />
+                </div>
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-bold text-[#1C1917] truncate">{watch('name') || 'Nama Toko'}</h3>
+              <p className="text-[11px] text-[#78716C] line-clamp-2 mt-1">{watch('description') || 'Belum ada deskripsi...'}</p>
+              <div 
+                className="mt-3 inline-flex px-3 py-1 rounded-full text-[10px] font-bold text-white shadow-sm"
+                style={{ background: watch('theme_color') }}
+              >
+                Lihat Katalog
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Section: Tampilan Toko */}
         <section>
           <h2 className="text-ios-caption uppercase tracking-widest text-[#A8A29E] mb-1.5 px-3">Tampilan Toko</h2>

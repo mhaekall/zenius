@@ -50,6 +50,12 @@ export default function Landing() {
           <div className="relative aspect-[9/19] bg-white rounded-[44px] shadow-2xl border-8 border-[#1C1917] overflow-hidden flex flex-col group">
             <div className="absolute top-0 inset-x-0 h-7 bg-[#1C1917] rounded-b-[20px] w-[40%] mx-auto z-10" />
             
+            {/* LIVE PREVIEW Badge */}
+            <div className="absolute top-10 right-4 z-20 flex items-center gap-1.5 px-2 py-1 bg-red-500 rounded-full shadow-lg animate-pulse">
+              <div className="w-1.5 h-1.5 bg-white rounded-full" />
+              <span className="text-[8px] font-black text-white uppercase tracking-wider">Demo Live</span>
+            </div>
+
             {/* Real Interactive UI Content */}
             <div className="flex-1 bg-[#FAFAF8] flex flex-col relative">
               {/* Cover Image */}

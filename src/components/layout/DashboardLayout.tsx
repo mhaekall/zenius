@@ -9,6 +9,9 @@ import {
   Store,
   Plus,
 } from 'lucide-react';
+import { useEffect } from 'react';
+import toast from 'react-hot-toast';
+import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
 import { cn } from '../../lib/utils';
 
@@ -20,6 +23,46 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, activeHref }: DashboardLayoutProps) {
   const { store } = useAuthStore();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Realtime Order Notifications
+  useEffect(() => {
+    if (!store) return;
+
+    const channel = supabase
+      .channel(`store-updates-${store.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'analytics_events',
+          filter: `store_id=eq.${store.id}`,
+        },
+        (payload) => {
+          if (payload.new.event_type === 'wa_checkout') {
+            toast('Pesanan Baru Masuk!', {
+              icon: '🛍️',
+              duration: 6000,
+              style: {
+                borderRadius: '20px',
+                background: '#1C1917',
+                color: '#fff',
+                fontWeight: 'bold',
+                fontSize: '14px',
+              },
+            });
+            
+            // Haptic-like sound or vibration could go here if native
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [store]);
+
   const navItems = [
     { icon: LayoutDashboard, label: 'Beranda', href: '/dashboard' },
     { icon: Package, label: 'Produk', href: '/dashboard/products' },

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Pencil, Trash2, Package, ToggleLeft, ToggleRight, Search, GripVertical } from 'lucide-react';
+import { Plus, Pencil, Trash2, Package, ToggleLeft, ToggleRight, Search, GripVertical, Check } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -46,6 +46,10 @@ export default function Products() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isAvailable, setIsAvailable] = useState(true);
+
+  // Bulk Selection State
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const isBulkMode = selectedIds.length > 0;
 
   // Cleanup blob URL to prevent memory leak
   useEffect(() => {
@@ -274,7 +278,33 @@ export default function Products() {
       return;
     }
     setProducts((prev) => prev.filter((p) => p.id !== id));
+    setSelectedIds((prev) => prev.filter((prevId) => prevId !== id));
     toast.success('Dihapus');
+  };
+
+  const handleBulkDelete = async () => {
+    if (!confirm(`Yakin hapus ${selectedIds.length} produk terpilih?`)) return;
+    const toastId = toast.loading('Menghapus...');
+    const { error } = await supabase.from('products').delete().in('id', selectedIds);
+    if (error) {
+      toast.error('Gagal menghapus masal', { id: toastId });
+      return;
+    }
+    setProducts((prev) => prev.filter((p) => !selectedIds.includes(p.id)));
+    setSelectedIds([]);
+    toast.success('Dihapus', { id: toastId });
+  };
+
+  const handleBulkToggle = async (targetStatus: boolean) => {
+    const toastId = toast.loading('Memperbarui...');
+    const { error } = await supabase.from('products').update({ is_available: targetStatus }).in('id', selectedIds);
+    if (error) {
+      toast.error('Gagal memperbarui masal', { id: toastId });
+      return;
+    }
+    setProducts((prev) => prev.map((p) => selectedIds.includes(p.id) ? { ...p, is_available: targetStatus } : p));
+    setSelectedIds([]);
+    toast.success('Status diperbarui', { id: toastId });
   };
 
   const handleDragEnd = async (result: any) => {
@@ -310,6 +340,12 @@ export default function Products() {
       toast.error('Gagal menyimpan urutan');
       // Ideally revert state here on failure, but keeping it simple for now
     }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
   };
 
   const filteredProducts = (products || []).filter(p => {
@@ -363,6 +399,48 @@ export default function Products() {
         </div>
       </div>
 
+      {/* Bulk Action Bar (Animated) */}
+      <AnimatePresence>
+        {isBulkMode && (
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 20, opacity: 0 }}
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-full max-w-[340px] px-4"
+          >
+            <div className="bg-[#1C1917] rounded-full py-3 px-5 shadow-2xl flex items-center justify-between border border-white/10 backdrop-blur-xl">
+              <span className="text-white text-xs font-bold">{selectedIds.length} terpilih</span>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => handleBulkToggle(true)}
+                  className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-full text-[10px] font-bold text-white transition-colors"
+                >
+                  Tersedia
+                </button>
+                <button 
+                  onClick={() => handleBulkToggle(false)}
+                  className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-full text-[10px] font-bold text-white transition-colors"
+                >
+                  Habis
+                </button>
+                <button 
+                  onClick={handleBulkDelete}
+                  className="p-1.5 bg-red-500/20 hover:bg-red-500/40 rounded-full text-red-400 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={() => setSelectedIds([])}
+                  className="p-1.5 text-[#A8A29E] hover:text-white transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {loading ? <ProductsGridSkeleton /> : filteredProducts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20">
           <div className="w-16 h-16 bg-[#F5F4F0] rounded-full flex items-center justify-center mb-4 shadow-ios-sm border border-black/[0.06]">
@@ -386,9 +464,27 @@ export default function Products() {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ type: "spring", stiffness: 400, damping: 30, mass: 0.8 }}
+                    onClick={() => isBulkMode && toggleSelect(product.id)}
+                    className="relative"
                   >
-                  <div className="bg-[#F5F4F0] rounded-[18px] overflow-hidden border border-black/[0.06] shadow-ios-sm h-full flex flex-col">
+                  <div className={cn(
+                    "bg-[#F5F4F0] rounded-[18px] overflow-hidden border transition-all h-full flex flex-col",
+                    selectedIds.includes(product.id) ? "border-amber-500 ring-2 ring-amber-500/20 shadow-ios-md" : "border-black/[0.06] shadow-ios-sm"
+                  )}>
                     <div className="aspect-[4/3] bg-[#EEECEA] relative">
+                      {/* Selection Circle (Grid) */}
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); toggleSelect(product.id); }}
+                        className={cn(
+                          "absolute top-2 left-2 z-10 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
+                          selectedIds.includes(product.id) 
+                            ? "bg-amber-500 border-amber-500 shadow-sm" 
+                            : "bg-black/10 border-white/40"
+                        )}
+                      >
+                        {selectedIds.includes(product.id) && <Check className="w-3 h-3 text-white" strokeWidth={4} />}
+                      </button>
+
                       {product.image_url ? (
                         <img 
                           src={product.image_url} 
@@ -449,11 +545,26 @@ export default function Products() {
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             className={cn(
-                              "bg-white rounded-[18px] border border-black/[0.06] p-3 flex items-center gap-3 transition-shadow",
+                              "bg-white rounded-[18px] border p-3 flex items-center gap-3 transition-all",
+                              selectedIds.includes(product.id) ? "border-amber-500 ring-2 ring-amber-500/20" : "border-black/[0.06]",
                               snapshot.isDragging ? "shadow-ios-lg z-50 ring-2 ring-[#F59E0B]/20" : "shadow-sm"
                             )}
                             style={provided.draggableProps.style}
+                            onClick={() => isBulkMode && toggleSelect(product.id)}
                           >
+                            {/* Selection Circle (List) */}
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); toggleSelect(product.id); }}
+                              className={cn(
+                                "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0",
+                                selectedIds.includes(product.id) 
+                                  ? "bg-amber-500 border-amber-500 shadow-sm" 
+                                  : "bg-gray-100 border-gray-300"
+                              )}
+                            >
+                              {selectedIds.includes(product.id) && <Check className="w-3 h-3 text-white" strokeWidth={4} />}
+                            </button>
+
                             <div 
                               {...provided.dragHandleProps}
                               className="w-8 h-10 flex items-center justify-center text-[#A8A29E] active:text-[#1C1917] active:bg-[#EEECEA] rounded-lg transition-colors"

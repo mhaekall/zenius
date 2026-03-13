@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Store, Eye, EyeOff } from 'lucide-react';
@@ -66,9 +66,12 @@ export default function Login() {
     });
 
     if (authError) {
-      // Don't expose raw error messages - log for debugging, show generic message
       console.error('Login error:', authError.message);
-      setError('Email atau password salah. Silakan coba lagi.');
+      if (authError.message.includes('Email not confirmed')) {
+        setError('Email belum dikonfirmasi. Silakan cek kotak masuk Anda.');
+      } else {
+        setError('Email atau password salah. Silakan coba lagi.');
+      }
       return;
     }
 

@@ -10,15 +10,14 @@ export default defineConfig({
     // import { ssgPlugin } from 'vite-plugin-ssg';
     // ssgPlugin({ pages: ['/', '/login', '/register', '/dashboard', '/c/:slug'] })
     VitePWA({
-      disable: true,
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'OpenMenu Digital Catalog',
+        name: 'OpenMenu - Katalog Digital UMKM',
         short_name: 'OpenMenu',
-        description: 'SaaS Katalog Digital QR Code untuk UMKM',
-        theme_color: '#ffffff',
-        background_color: '#ffffff',
+        description: 'Bikin Katalog Digital Berbasis QR Code dalam 2 Menit',
+        theme_color: '#FAFAF8',
+        background_color: '#FAFAF8',
         display: 'standalone',
         orientation: 'portrait',
         icons: [

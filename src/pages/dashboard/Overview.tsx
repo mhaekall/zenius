@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   Eye, MessageCircle, ShoppingCart,
   ExternalLink, Copy, Check,
-  QrCode, ArrowRight, Package, Crown
+  QrCode, ArrowRight, Package, Crown, TrendingUp
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { supabase } from '../../lib/supabase';
@@ -220,6 +220,25 @@ export default function Overview() {
   const totalViews = events.filter((e) => e.event_type === 'page_view').length;
   const totalWa = events.filter((e) => e.event_type === 'wa_checkout').length;
   const totalCart = events.filter((e) => e.event_type === 'add_to_cart').length;
+  const totalQr = allEvents.filter((e: any) => e.event_type === 'page_view' && e.referrer === 'qr_code').length;
+
+  // Traffic Source Analysis
+  const sources = allEvents
+    .filter(e => e.event_type === 'page_view')
+    .reduce((acc: Record<string, number>, e: any) => {
+      const source = e.referrer?.includes('instagram') ? 'Instagram' : 
+                     e.referrer?.includes('wa') || e.referrer?.includes('whatsapp') ? 'WhatsApp' :
+                     e.referrer?.includes('tiktok') ? 'TikTok' : 
+                     e.referrer?.includes('qr') ? 'QR Code' : 'Langsung / Lainnya';
+      acc[source] = (acc[source] || 0) + 1;
+      return acc;
+    }, {});
+
+  // Calculate Average Price for Revenue Estimation
+  const avgPrice = products.length > 0 
+    ? products.reduce((acc, p) => acc + Number(p.price), 0) / products.length 
+    : 0;
+  const estimatedRevenue = totalWa * avgPrice;
 
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
@@ -342,6 +361,51 @@ export default function Overview() {
         </motion.div>
       )}
 
+      {/* 1.7 QUICK ACTIONS — Horizontal scrolling row */}
+      <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 mb-5 px-1">
+        <button 
+          onClick={copyLink}
+          className="flex flex-col items-center gap-2 flex-shrink-0"
+        >
+          <div className="w-14 h-14 rounded-[18px] bg-white border border-black/[0.04] shadow-ios-sm flex items-center justify-center text-[#1C1917] active:bg-[#EEECEA] transition-colors">
+            {copied ? <Check className="w-6 h-6 text-emerald-500" /> : <Copy className="w-6 h-6" />}
+          </div>
+          <span className="text-[10px] font-bold text-[#78716C] uppercase tracking-tighter">Salin Link</span>
+        </button>
+
+        <Link 
+          to="/dashboard/products?add=true"
+          className="flex flex-col items-center gap-2 flex-shrink-0"
+        >
+          <div className="w-14 h-14 rounded-[18px] bg-white border border-black/[0.04] shadow-ios-sm flex items-center justify-center text-[#1C1917] active:bg-[#EEECEA] transition-colors">
+            <Plus className="w-6 h-6" />
+          </div>
+          <span className="text-[10px] font-bold text-[#78716C] uppercase tracking-tighter">+ Produk</span>
+        </Link>
+
+        <Link 
+          to="/dashboard/qrcode"
+          className="flex flex-col items-center gap-2 flex-shrink-0"
+        >
+          <div className="w-14 h-14 rounded-[18px] bg-white border border-black/[0.04] shadow-ios-sm flex items-center justify-center text-[#1C1917] active:bg-[#EEECEA] transition-colors">
+            <QrCode className="w-6 h-6" />
+          </div>
+          <span className="text-[10px] font-bold text-[#78716C] uppercase tracking-tighter">QR Code</span>
+        </Link>
+
+        <a 
+          href={`https://wa.me/?text=Halo! Cek katalog kami di: ${catalogUrl}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex flex-col items-center gap-2 flex-shrink-0"
+        >
+          <div className="w-14 h-14 rounded-[18px] bg-[#25D366] shadow-ios-sm flex items-center justify-center text-white active:opacity-80 transition-opacity">
+            <MessageCircle className="w-6 h-6" />
+          </div>
+          <span className="text-[10px] font-bold text-[#78716C] uppercase tracking-tighter">Share WA</span>
+        </a>
+      </div>
+
       {/* 2. PERIOD SELECTOR — iOS Segmented Control */}
       <div className="bg-[#EEECEA] p-1 rounded-[14px] flex items-center mb-5">
         {(['today', '7d', '30d'] as Period[]).map((p) => (
@@ -428,12 +492,13 @@ export default function Overview() {
         );
       })()}
 
-      {/* 4. METRICS ROW — 3 chips, secondary to insight */}
-      <div className="grid grid-cols-3 gap-2.5 mb-5">
+      {/* 4. METRICS ROW — 2x2 grid for mobile clarity */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
         {[
           { label: 'Pengunjung', value: totalViews, icon: Eye },
           { label: 'Pesanan WA', value: totalWa, icon: MessageCircle },
           { label: 'Keranjang', value: totalCart, icon: ShoppingCart },
+          { label: 'Scan QR', value: totalQr, icon: QrCode },
         ].map((stat) => (
           <div
             key={stat.label}
@@ -449,6 +514,28 @@ export default function Overview() {
           </div>
         ))}
       </div>
+
+      {/* 4.5 REVENUE ESTIMATION — Apple Card style */}
+      {totalWa > 0 && (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white rounded-[24px] p-5 border border-black/[0.04] shadow-ios-md mb-5 relative overflow-hidden group"
+        >
+          <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-10 transition-opacity">
+            <Crown className="w-20 h-20 rotate-12" />
+          </div>
+          <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">Estimasi Omset</p>
+          <div className="flex items-baseline gap-1">
+            <h2 className="text-3xl font-black text-[#1C1917] tracking-tight">
+              {formatRupiah(estimatedRevenue)}
+            </h2>
+          </div>
+          <p className="text-[10px] text-[#A8A29E] mt-2 leading-relaxed">
+            Dihitung dari {totalWa} klik WhatsApp × rata-rata harga produk kamu ({formatRupiah(avgPrice)}).
+          </p>
+        </motion.div>
+      )}
 
       {/* 5. CONVERSION RATE INDICATOR — Apple Health ring style */}
       {totalViews > 0 && (
@@ -536,7 +623,42 @@ export default function Overview() {
             </ResponsiveContainer>
           </div>
         )}
+        <Link 
+          to="/dashboard/analytics" 
+          className="mt-4 flex items-center justify-center gap-1.5 py-2 px-4 rounded-[12px] bg-white border border-black/[0.04] text-[11px] font-bold text-[#1C1917] shadow-sm active:bg-[#EEECEA] transition-colors ios-press"
+        >
+          <TrendingUp className="w-3.5 h-3.5 text-amber-500" />
+          Lihat Analitik Lengkap
+        </Link>
       </div>
+
+      {/* 6.5 TRAFFIC SOURCE — Compact list */}
+      {totalViews > 0 && (
+        <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] p-4 mb-5">
+          <p className="text-[10px] font-semibold text-[#A8A29E] uppercase tracking-widest mb-4">
+            Sumber Pengunjung
+          </p>
+          <div className="space-y-3">
+            {Object.entries(sources).sort((a,b) => b[1] - a[1]).map(([source, count]) => (
+              <div key={source} className="flex items-center gap-3">
+                <div className="flex-1">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs font-bold text-[#1C1917]">{source}</span>
+                    <span className="text-[10px] font-medium text-[#A8A29E]">{count} klik</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-[#EEECEA] rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(count / totalViews) * 100}%` }}
+                      className="h-full bg-[#1C1917] rounded-full"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 7. CATALOG LINK — compact, action-focused */}
       <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] p-4 mb-5">

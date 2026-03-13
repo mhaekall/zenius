@@ -4,7 +4,7 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import { ShoppingCart, Minus, Plus, X, MessageCircle, QrCode, Search, ChevronDown, Share, Info, MapPin, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCartStore } from '../store/cartStore';
-import { formatRupiah, buildWhatsAppUrl, cn } from '../lib/utils';
+import { formatRupiah, buildWhatsAppUrl, getOptimizedImage, cn } from '../lib/utils';
 import type { Store, Product } from '../types';
 import toast from 'react-hot-toast';
 
@@ -86,7 +86,7 @@ function ProductCard({
                 <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse" />
               )}
               <img
-                src={product.image_url}
+                src={getOptimizedImage(product.image_url, 400)}
                 alt={product.name}
                 className="w-full h-full object-cover"
                 style={{
@@ -212,7 +212,7 @@ function ProductCard({
               <div className="overflow-y-auto flex-1 pb-24">
                 {product.image_url && (
                   <div className="w-full" style={{ aspectRatio: '16/9' }}>
-                    <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                    <img src={getOptimizedImage(product.image_url, 400)} alt={product.name} className="w-full h-full object-cover" />
                   </div>
                 )}
 
@@ -314,7 +314,16 @@ export default function Catalog() {
         setProducts(sorted);
         setCategories(['Semua', ...new Set(sorted.map(p => p.category))]);
       }
-      trackEvent(data.id, 'page_view', { referrer: document.referrer || null });
+
+      // Detect Source
+      const searchParams = new URLSearchParams(window.location.search);
+      const utmSource = searchParams.get('utm_source') || searchParams.get('source');
+      const isQR = utmSource === 'qr' || window.location.hash.includes('qr');
+      
+      trackEvent(data.id, 'page_view', { 
+        referrer: isQR ? 'qr_code' : (utmSource || document.referrer || 'direct') 
+      });
+      
       setLoading(false);
     };
     fetch();
@@ -330,7 +339,13 @@ export default function Catalog() {
     if (!store) return;
     const waItems = items.map(i => ({ name: i.product.name, qty: i.qty, price: i.product.price }));
     const url = buildWhatsAppUrl(store.wa_number, waItems, store.name, window.location.href);
-    trackEvent(store.id, 'wa_checkout');
+    
+    // Track event with total price for revenue estimation
+    trackEvent(store.id, 'wa_checkout', { 
+      total_price: totalPrice,
+      item_count: totalItems
+    });
+    
     clearCart();
     window.open(url, '_blank');
   };
