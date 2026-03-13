@@ -1,115 +1,76 @@
-import { useEffect, useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
-import { ShoppingCart, Minus, Plus, X, MessageCircle, QrCode, Search, ChevronDown } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import { useCartStore } from '../store/cartStore';
-import { formatRupiah, buildWhatsAppUrl } from '../lib/utils';
-import type { Store, Product } from '../types';
+              <button 
+                onClick={() => setSelectedProduct(null)} 
+                className="absolute top-4 right-4 z-10 p-2 bg-black/40 backdrop-blur-md rounded-full text-white ios-press"
+              >
+                <X className="w-5 h-5" />
+              </button>
 
-// ─── Analytics helper (Fix #6 dari analisis bug) ─────────────────────────────
-const trackEvent = async (storeId: string, eventType: string, extras: Record<string, unknown> = {}) => {
-  const { error } = await supabase.from('analytics_events').insert({ store_id: storeId, event_type: eventType, ...extras });
-  if (error) console.warn('[Analytics]', eventType, error.message);
-};
-
-// ─── Hex → RGB helper untuk dynamic color ────────────────────────────────────
-function hexToRgb(hex: string) {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `${r}, ${g}, ${b}`;
-}
-
-// ─── Product Card ─────────────────────────────────────────────────────────────
-function ProductCard({
-  product,
-  themeColor,
-  themeRgb,
-  cartItem,
-  onAdd,
-  onUpdateQty,
-  storeId,
-}: {
-  product: Product;
-  themeColor: string;
-  themeRgb: string;
-  cartItem?: { qty: number };
-  onAdd: () => void;
-  onUpdateQty: (qty: number) => void;
-  storeId: string;
-}) {
-  const [pressed, setPressed] = useState(false);
-  const [imgLoaded, setImgLoaded] = useState(false);
-  const [showDetail, setShowDetail] = useState(false);
-
-  return (
-    <>
-      <motion.div
-        layout
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
-        className="relative flex flex-col rounded-[20px] overflow-hidden bg-white"
-        style={{
-          boxShadow: pressed
-            ? `0 2px 8px rgba(${themeRgb}, 0.15), 0 1px 3px rgba(0,0,0,0.06)`
-            : `0 6px 24px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04)`,
-          transition: 'box-shadow 0.2s ease',
-        }}
-        onTapStart={() => setPressed(true)}
-        onTap={() => setPressed(false)}
-        onTapCancel={() => setPressed(false)}
-      >
-        {/* Image */}
-        <div
-          className="relative overflow-hidden cursor-pointer"
-          style={{ aspectRatio: '4/3' }}
-          onClick={() => {
-            setShowDetail(true);
-            trackEvent(storeId, 'product_view', { product_id: product.id });
-          }}
-        >
-          {product.image_url ? (
-            <>
-              {!imgLoaded && (
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse" />
-              )}
-              <img
-                src={product.image_url}
-                alt={product.name}
-                className="w-full h-full object-cover"
-                style={{
-                  opacity: imgLoaded ? 1 : 0,
-                  transition: 'opacity 0.4s ease',
-                  transform: 'scale(1.01)',
+              <button 
+                onClick={async () => {
+                  if (navigator.share && selectedProduct) {
+                    await navigator.share({
+                      title: selectedProduct.name,
+                      text: selectedProduct.description || '',
+                      url: window.location.href + '?p=' + selectedProduct.id
+                    });
+                  }
                 }}
-                loading="lazy"
-                onLoad={() => setImgLoaded(true)}
-              />
-            </>
-          ) : (
-            <div
-              className="w-full h-full flex items-center justify-center"
-              style={{ background: `rgba(${themeRgb}, 0.06)` }}
-            >
-              <span style={{ fontSize: 40, opacity: 0.25 }}>🍽</span>
-            </div>
-          )}
+                className="absolute top-4 left-4 z-10 p-2 bg-black/40 backdrop-blur-md rounded-full text-white ios-press"
+              >
+                <Share className="w-5 h-5" />
+              </button>
+              
+              <div className="overflow-y-auto flex-1 custom-scrollbar pb-24">
+                <div className="aspect-square w-full bg-[#EEECEA] relative">
+                  {selectedProduct.image_url ? (
+                    <img src={selectedProduct.image_url} alt={selectedProduct.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <ProductPlaceholder name={selectedProduct.name} themeColor={themeColor} />
+                  )}
+                </div>
+                <div className="p-5">
+                  <div className="flex justify-between items-start gap-4 mb-2">
+                    <h2 className="text-xl font-bold text-[#1C1917] leading-tight">{selectedProduct.name}</h2>
+                    <p className="text-lg font-bold whitespace-nowrap" style={{ color: themeColor }}>
+                      {formatRupiah(selectedProduct.price)}
+                    </p>
+                  </div>
+                  {selectedProduct.description && (
+                    <p className="text-[#78716C] text-sm leading-relaxed mt-3">
+                      {selectedProduct.description}
+                    </p>
+                  )}
 
-          {/* Category pill */}
-          <div className="absolute top-2.5 left-2.5">
-            <span
-              className="text-[10px] font-bold px-2 py-1 rounded-full backdrop-blur-md"
-              style={{
-                background: 'rgba(255,255,255,0.85)',
-                color: themeColor,
-                letterSpacing: '0.04em',
-              }}
-            >
-              {product.category}
-            </span>
-          </div>
+                  {/* CUSTOM OPTIONS (HACKER STYLE) */}
+                  {(selectedProduct as any).options && (selectedProduct as any).options.length > 0 && (
+                    <div className="mt-8 space-y-6">
+                      {(selectedProduct as any).options.map((opt: any) => (
+                        <div key={opt.name}>
+                          <p className="text-[11px] font-bold text-[#A8A29E] uppercase tracking-widest mb-3 flex items-center gap-2">
+                            {opt.name} {opt.required && <span className="text-red-400 text-[9px] bg-red-50 px-1.5 py-0.5 rounded-full">WAJIB</span>}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {opt.values.map((val: string) => (
+                              <button
+                                key={val}
+                                onClick={() => setSelectedOptions(prev => ({...prev, [opt.name]: val}))}
+                                className={cn(
+                                  "px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 border",
+                                  selectedOptions[opt.name] === val 
+                                    ? "bg-[#1C1917] text-white border-transparent shadow-md"
+                                    : "bg-white text-[#78716C] border-[#E8E6E1] hover:bg-[#EEECEA]"
+                                )}
+                              >
+                                {val}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
         </div>
 
         {/* Content */}
@@ -259,6 +220,8 @@ export default function Catalog() {
   const [qrisOpen, setQrisOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -758,6 +721,7 @@ export default function Catalog() {
           </div>
         )}
       </AnimatePresence>
+
       {/* 8. STORE INFO MODAL */}
       <AnimatePresence>
         {infoOpen && (
