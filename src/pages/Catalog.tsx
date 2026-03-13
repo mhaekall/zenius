@@ -1,76 +1,116 @@
-              <button 
-                onClick={() => setSelectedProduct(null)} 
-                className="absolute top-4 right-4 z-10 p-2 bg-black/40 backdrop-blur-md rounded-full text-white ios-press"
-              >
-                <X className="w-5 h-5" />
-              </button>
+import { useEffect, useState, useRef } from 'react';
+import { useParams } from 'react-router-dom';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { ShoppingCart, Minus, Plus, X, MessageCircle, QrCode, Search, ChevronDown, Share, Info, MapPin, Clock } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { useCartStore } from '../store/cartStore';
+import { formatRupiah, buildWhatsAppUrl } from '../lib/utils';
+import type { Store, Product } from '../types';
 
-              <button 
-                onClick={async () => {
-                  if (navigator.share && selectedProduct) {
-                    await navigator.share({
-                      title: selectedProduct.name,
-                      text: selectedProduct.description || '',
-                      url: window.location.href + '?p=' + selectedProduct.id
-                    });
-                  }
+// ─── Analytics helper (Fix #6 dari analisis bug) ─────────────────────────────
+const trackEvent = async (storeId: string, eventType: string, extras: Record<string, unknown> = {}) => {
+  const { error } = await supabase.from('analytics_events').insert({ store_id: storeId, event_type: eventType, ...extras });
+  if (error) console.warn('[Analytics]', eventType, error.message);
+};
+
+// ─── Hex → RGB helper untuk dynamic color ────────────────────────────────────
+function hexToRgb(hex: string) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `${r}, ${g}, ${b}`;
+}
+
+// ─── Product Card ─────────────────────────────────────────────────────────────
+function ProductCard({
+  product,
+  themeColor,
+  themeRgb,
+  cartItem,
+  onAdd,
+  onUpdateQty,
+  storeId,
+}: {
+  product: Product;
+  themeColor: string;
+  themeRgb: string;
+  cartItem?: { qty: number };
+  onAdd: (p?: Product) => void;
+  onUpdateQty: (qty: number) => void;
+  storeId: string;
+}) {
+  const [pressed, setPressed] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+
+  return (
+    <>
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
+        className="relative flex flex-col rounded-[24px] overflow-hidden bg-white border border-black/[0.04]"
+        style={{
+          boxShadow: pressed
+            ? `0 2px 8px rgba(${themeRgb}, 0.15), 0 1px 3px rgba(0,0,0,0.06)`
+            : `0 8px 30px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.02)`,
+          transition: 'box-shadow 0.2s ease',
+        }}
+        onTapStart={() => setPressed(true)}
+        onTap={() => setPressed(false)}
+        onTapCancel={() => setPressed(false)}
+      >
+        {/* Image */}
+        <div
+          className="relative overflow-hidden cursor-pointer"
+          style={{ aspectRatio: '4/3' }}
+          onClick={() => {
+            setShowDetail(true);
+            trackEvent(storeId, 'product_view', { product_id: product.id });
+          }}
+        >
+          {product.image_url ? (
+            <>
+              {!imgLoaded && (
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse" />
+              )}
+              <img
+                src={product.image_url}
+                alt={product.name}
+                className="w-full h-full object-cover"
+                style={{
+                  opacity: imgLoaded ? 1 : 0,
+                  transition: 'opacity 0.4s ease',
+                  transform: 'scale(1.01)',
                 }}
-                className="absolute top-4 left-4 z-10 p-2 bg-black/40 backdrop-blur-md rounded-full text-white ios-press"
-              >
-                <Share className="w-5 h-5" />
-              </button>
-              
-              <div className="overflow-y-auto flex-1 custom-scrollbar pb-24">
-                <div className="aspect-square w-full bg-[#EEECEA] relative">
-                  {selectedProduct.image_url ? (
-                    <img src={selectedProduct.image_url} alt={selectedProduct.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <ProductPlaceholder name={selectedProduct.name} themeColor={themeColor} />
-                  )}
-                </div>
-                <div className="p-5">
-                  <div className="flex justify-between items-start gap-4 mb-2">
-                    <h2 className="text-xl font-bold text-[#1C1917] leading-tight">{selectedProduct.name}</h2>
-                    <p className="text-lg font-bold whitespace-nowrap" style={{ color: themeColor }}>
-                      {formatRupiah(selectedProduct.price)}
-                    </p>
-                  </div>
-                  {selectedProduct.description && (
-                    <p className="text-[#78716C] text-sm leading-relaxed mt-3">
-                      {selectedProduct.description}
-                    </p>
-                  )}
+                loading="lazy"
+                onLoad={() => setImgLoaded(true)}
+              />
+            </>
+          ) : (
+            <div
+              className="w-full h-full flex items-center justify-center"
+              style={{ background: `rgba(${themeRgb}, 0.06)` }}
+            >
+              <span style={{ fontSize: 40, opacity: 0.25 }}>🍽</span>
+            </div>
+          )}
 
-                  {/* CUSTOM OPTIONS (HACKER STYLE) */}
-                  {(selectedProduct as any).options && (selectedProduct as any).options.length > 0 && (
-                    <div className="mt-8 space-y-6">
-                      {(selectedProduct as any).options.map((opt: any) => (
-                        <div key={opt.name}>
-                          <p className="text-[11px] font-bold text-[#A8A29E] uppercase tracking-widest mb-3 flex items-center gap-2">
-                            {opt.name} {opt.required && <span className="text-red-400 text-[9px] bg-red-50 px-1.5 py-0.5 rounded-full">WAJIB</span>}
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            {opt.values.map((val: string) => (
-                              <button
-                                key={val}
-                                onClick={() => setSelectedOptions(prev => ({...prev, [opt.name]: val}))}
-                                className={cn(
-                                  "px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 border",
-                                  selectedOptions[opt.name] === val 
-                                    ? "bg-[#1C1917] text-white border-transparent shadow-md"
-                                    : "bg-white text-[#78716C] border-[#E8E6E1] hover:bg-[#EEECEA]"
-                                )}
-                              >
-                                {val}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+          {/* Category pill */}
+          <div className="absolute top-2.5 left-2.5">
+            <span
+              className="text-[10px] font-bold px-2 py-1 rounded-full backdrop-blur-md"
+              style={{
+                background: 'rgba(255,255,255,0.85)',
+                color: themeColor,
+                letterSpacing: '0.04em',
+              }}
+            >
+              {product.category}
+            </span>
+          </div>
         </div>
 
         {/* Content */}
@@ -148,32 +188,84 @@
             >
               <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 mb-0" />
 
-              {product.image_url && (
-                <div className="w-full" style={{ aspectRatio: '16/9' }}>
-                  <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
-                </div>
-              )}
-
-              <div className="p-5">
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <h2 className="text-xl font-black text-gray-900 leading-tight flex-1">{product.name}</h2>
-                  <span className="text-xl font-black flex-shrink-0" style={{ color: themeColor }}>
-                    {formatRupiah(product.price)}
-                  </span>
-                </div>
-
-                <span
-                  className="inline-block text-xs font-bold px-2.5 py-1 rounded-full mb-3"
-                  style={{ background: `rgba(${themeRgb}, 0.1)`, color: themeColor }}
+              {/* Action Buttons */}
+              <div className="absolute top-4 right-4 z-10 flex gap-2">
+                <button 
+                  onClick={async () => {
+                    if (navigator.share) {
+                      await navigator.share({
+                        title: product.name,
+                        text: product.description || '',
+                        url: window.location.href + '?p=' + product.id
+                      });
+                    }
+                  }}
+                  className="p-2 bg-black/40 backdrop-blur-md rounded-full text-white ios-press"
                 >
-                  {product.category}
-                </span>
+                  <Share className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={() => setShowDetail(false)} 
+                  className="p-2 bg-black/40 backdrop-blur-md rounded-full text-white ios-press"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
 
-                {product.description && (
-                  <p className="text-sm text-gray-600 leading-relaxed mb-5">{product.description}</p>
+              <div className="overflow-y-auto flex-1 custom-scrollbar pb-24">
+                {product.image_url && (
+                  <div className="w-full" style={{ aspectRatio: '16/9' }}>
+                    <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                  </div>
                 )}
 
-                <div className="flex gap-3 pb-safe">
+                <div className="p-5">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <h2 className="text-xl font-black text-gray-900 leading-tight flex-1">{product.name}</h2>
+                    <span className="text-xl font-black flex-shrink-0" style={{ color: themeColor }}>
+                      {formatRupiah(product.price)}
+                    </span>
+                  </div>
+
+                  <span
+                    className="inline-block text-xs font-bold px-2.5 py-1 rounded-full mb-3"
+                    style={{ background: `rgba(${themeRgb}, 0.1)`, color: themeColor }}
+                  >
+                    {product.category}
+                  </span>
+
+                  {product.description && (
+                    <p className="text-sm text-gray-600 leading-relaxed mb-5">{product.description}</p>
+                  )}
+
+                  {/* CUSTOM OPTIONS (HACKER STYLE) */}
+                  {product.options && Array.isArray(product.options) && product.options.length > 0 && (
+                    <div className="mt-8 space-y-6">
+                      {product.options.map((opt: any) => (
+                        <div key={opt.name}>
+                          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                            {opt.name} {opt.required && <span className="text-red-400 text-[9px] bg-red-50 px-1.5 py-0.5 rounded-full uppercase">Wajib</span>}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {opt.values.map((val: string) => (
+                              <button
+                                key={val}
+                                onClick={() => {/* TODO: Implement option selection state */}}
+                                className="px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 border bg-white text-gray-500 border-gray-100 hover:bg-gray-50"
+                              >
+                                {val}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="absolute bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t border-gray-100 p-4 pb-safe">
+                <div className="flex gap-3">
                   {cartItem ? (
                     <div className="flex-1 flex items-center justify-between bg-gray-50 rounded-2xl px-4 py-3">
                       <motion.button whileTap={{ scale: 0.85 }} onClick={() => onUpdateQty(cartItem.qty - 1)}
@@ -191,7 +283,18 @@
                   ) : (
                     <motion.button
                       whileTap={{ scale: 0.97 }}
-                      onClick={() => { onAdd(); setShowDetail(false); }}
+                                            onClick={() => { 
+                        // Encode options into the item name or a new field if useCartStore supports it
+                        // For now, let's append to name for simplicity in WA checkout
+                        const optionSummary = Object.values(selectedOptions).join(', ');
+                        const modifiedProduct = optionSummary 
+                          ? { ...product, name: `${product.name} (${optionSummary})` }
+                          : product;
+                        
+                        onAdd(modifiedProduct); 
+                        setShowDetail(false); 
+                        setSelectedOptions({});
+                      }}
                       className="flex-1 py-3.5 rounded-2xl text-white font-bold text-sm flex items-center justify-center gap-2"
                       style={{ background: themeColor }}
                     >
@@ -220,8 +323,6 @@ export default function Catalog() {
   const [qrisOpen, setQrisOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [notFound, setNotFound] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -307,7 +408,7 @@ export default function Catalog() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#f7f7f5', fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div className="min-h-screen antialiased selection:bg-black/10" style={{ background: '#F2F2F7', fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
 
       {/* ── Sticky Header (muncul saat scroll) ──────────────────────────────── */}
       <motion.div
@@ -522,8 +623,8 @@ export default function Catalog() {
                       themeRgb={themeRgb}
                       cartItem={cartItem}
                       storeId={store.id}
-                      onAdd={() => {
-                        addItem(product, storeSlug);
+                      onAdd={(p) => {
+                        addItem(p || product, storeSlug);
                         trackEvent(store.id, 'add_to_cart', { product_id: product.id });
                       }}
                       onUpdateQty={(qty) => updateQty(product.id, qty)}
@@ -716,72 +817,6 @@ export default function Catalog() {
               </div>
               <div className="px-5 pb-5">
                 <img src={store.qris_url} alt="QRIS" className="w-full rounded-2xl" />
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* 8. STORE INFO MODAL */}
-      <AnimatePresence>
-        {infoOpen && (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
-              onClick={() => setInfoOpen(false)}
-            />
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ opacity: 0.9, scale: 0.9 }}
-              className="relative bg-[#FAFAF8] rounded-[28px] p-6 w-full max-w-xs shadow-ios-lg border border-white/50"
-            >
-              <button 
-                onClick={() => setInfoOpen(false)} 
-                className="absolute top-4 right-4 p-1.5 bg-[#EEECEA] rounded-full text-[#78716C] ios-press"
-              >
-                <X className="w-4 h-4" />
-              </button>
-              
-              <div className="flex flex-col items-center text-center mb-6">
-                {store.logo_url ? (
-                  <img src={store.logo_url} className="w-16 h-16 rounded-full object-cover mb-3 ring-2" style={{ '--tw-ring-color': themeColor } as any} />
-                ) : (
-                  <div className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold mb-3" style={{ background: themeColor }}>
-                    {store.name.charAt(0)}
-                  </div>
-                )}
-                <h3 className="font-bold text-[#1C1917] text-lg leading-tight">{store.name}</h3>
-                <p className="text-xs text-[#78716C] mt-1">{store.description}</p>
-              </div>
-
-              <div className="space-y-4 text-left">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#EEECEA] flex items-center justify-center flex-shrink-0">
-                    <MapPin className="w-4 h-4 text-[#78716C]" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-[#A8A29E] uppercase tracking-wider">Lokasi</p>
-                    <p className="text-xs text-[#1C1917] font-medium leading-relaxed">
-                      {store.address || 'Alamat belum diatur'}, {store.city || ''}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#EEECEA] flex items-center justify-center flex-shrink-0">
-                    <Clock className="w-4 h-4 text-[#78716C]" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-[#A8A29E] uppercase tracking-wider">Jam Operasional</p>
-                    <p className="text-xs text-[#1C1917] font-medium leading-relaxed">
-                      {store.operating_hours || 'Belum diatur'}
-                    </p>
-                  </div>
-                </div>
               </div>
             </motion.div>
           </div>
