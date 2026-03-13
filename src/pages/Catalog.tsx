@@ -413,11 +413,11 @@ export default function Catalog() {
       {/* ── Sticky Header (muncul saat scroll) ──────────────────────────────── */}
       <motion.div
         style={{ opacity: headerOpacity }}
-        className="fixed top-0 left-0 right-0 z-40 border-b border-gray-100/80"
+        className="fixed top-4 left-4 right-4 z-40 max-w-lg mx-auto"
       >
         <div
-          className="max-w-lg mx-auto px-4 h-14 flex items-center gap-3"
-          style={{ background: 'rgba(247,247,245,0.92)', backdropFilter: 'blur(16px)' }}
+          className="h-14 flex items-center gap-3 px-4 rounded-[24px] shadow-lg border border-white/20"
+          style={{ background: 'rgba(247,247,245,0.85)', backdropFilter: 'blur(20px)' }}
         >
           {store.logo_url ? (
             <img src={store.logo_url} alt={store.name} className="w-7 h-7 rounded-xl object-cover flex-shrink-0" />
@@ -468,7 +468,7 @@ export default function Catalog() {
                   transition={{ delay: 0.1, type: 'spring', stiffness: 300 }}
                   src={store.logo_url}
                   alt={store.name}
-                  className="w-16 h-16 rounded-2xl object-cover border-2 border-white/30 shadow-lg mb-4"
+                  className="w-24 h-24 rounded-[32px] object-cover border-4 border-white/30 shadow-2xl relative -mt-8 mb-2"
                 />
               )}
               <motion.h1
@@ -528,7 +528,7 @@ export default function Catalog() {
 
       {/* ── Search + Filter Bar ──────────────────────────────────────────────── */}
       <div className="sticky top-0 z-30 bg-[#f7f7f5]">
-        <div className="max-w-lg mx-auto px-4 pt-1 pb-3 space-y-3">
+        <div className="max-w-lg mx-auto px-4 pt-4 pb-4 space-y-3">
 
           {/* Search bar */}
           <AnimatePresence>
@@ -637,45 +637,37 @@ export default function Catalog() {
         )}
       </div>
 
-      {/* ── Floating Cart Bar ────────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {totalItems > 0 && (
-          <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-            className="fixed bottom-6 left-0 right-0 z-40 px-4 max-w-lg mx-auto"
-          >
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={() => setCartOpen(true)}
-              className="w-full flex items-center gap-3 px-5 py-4 rounded-[22px] text-white relative overflow-hidden"
-              style={{
-                background: themeColor,
-                boxShadow: `0 12px 32px rgba(${themeRgb}, 0.45), 0 4px 12px rgba(${themeRgb}, 0.25)`,
-              }}
-            >
-              {/* Cart badge */}
-              <div className="relative">
-                <ShoppingCart className="w-5 h-5" />
-                <motion.span
-                  key={totalItems}
-                  initial={{ scale: 1.4 }}
-                  animate={{ scale: 1 }}
-                  className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-white text-[10px] font-black flex items-center justify-center"
-                  style={{ color: themeColor }}
-                >
-                  {totalItems}
-                </motion.span>
-              </div>
-              <span className="flex-1 text-left text-sm font-bold">{totalItems} item dipilih</span>
-              <span className="text-sm font-black">{formatRupiah(totalPrice)}</span>
-              <ChevronDown className="w-4 h-4 opacity-70 rotate-180" />
-            </motion.button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {/* ── Bottom Navigation Bar (Cart + Categories) ────────────────────────── */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none pb-safe">
+        <div className="max-w-lg mx-auto px-4 pb-6 pt-10 bg-gradient-to-t from-[#F2F2F7] via-[#F2F2F7]/80 to-transparent flex flex-col gap-3">
+          <AnimatePresence>
+            {totalItems > 0 && (
+              <motion.div initial={{ y: 50, opacity: 0, scale: 0.9 }} animate={{ y: 0, opacity: 1, scale: 1 }} exit={{ y: 50, opacity: 0, scale: 0.9 }} transition={{ type: "spring", damping: 25, stiffness: 300 }} className="self-end pointer-events-auto">
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setCartOpen(true)} className="h-[52px] pl-4 pr-5 rounded-full flex items-center gap-3 shadow-2xl border border-white/20 relative" style={{ background: `linear-gradient(135deg, ${themeColor}, ${themeColor}dd)` }}>
+                  <div className="relative flex items-center justify-center w-[34px] h-[34px] bg-white/20 rounded-full">
+                    <ShoppingCart className="w-4 h-4 text-white" />
+                    <motion.div key={totalItems} initial={{ scale: 1.5 }} animate={{ scale: 1 }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-black text-white shadow-sm">{totalItems}</motion.div>
+                  </div>
+                  <div className="flex flex-col items-start leading-tight">
+                    <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">Total</span>
+                    <span className="text-[14px] font-black text-white tracking-tight">{formatRupiah(totalPrice)}</span>
+                  </div>
+                </motion.button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <div className="pointer-events-auto overflow-hidden rounded-[24px] bg-white/90 backdrop-blur-2xl border border-black/[0.04] shadow-ios-lg p-1.5 flex gap-1">
+            <div className="flex overflow-x-auto scrollbar-hide gap-1 w-full relative">
+              {categories.map((cat) => (
+                <motion.button key={cat} onClick={() => setActiveCategory(cat)} whileTap={{ scale: 0.95 }} className={cn("flex-1 whitespace-nowrap px-4 py-2.5 rounded-[20px] text-[13px] font-bold transition-all duration-300 relative", activeCategory === cat ? "text-white" : "text-gray-500")}>
+                  {activeCategory === cat && ( <motion.div layoutId="bottom-nav-indicator" className="absolute inset-0 rounded-[20px] shadow-sm z-0" style={{ background: themeColor }} transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} /> )}
+                  <span className="relative z-10">{cat}</span>
+                </motion.button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* ── Cart Sheet ───────────────────────────────────────────────────────── */}
       <AnimatePresence>

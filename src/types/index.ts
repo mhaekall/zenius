@@ -31,6 +31,7 @@ export interface Product {
   category: string;
   is_available: boolean;
   sort_order: number;
+  options?: any; // JSONB for variants
   created_at: string;
   updated_at: string;
 }

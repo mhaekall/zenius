@@ -295,6 +295,24 @@ export default function Settings() {
           </div>
         </section>
 
+        {/* Section: Paket Langganan */}
+        <section>
+          <h2 className="text-ios-caption uppercase tracking-widest text-[#A8A29E] mb-1.5 px-3">Paket Langganan</h2>
+          <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] shadow-ios-sm overflow-hidden px-4 py-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-[#1C1917]">Paket Gratis</p>
+              <p className="text-xs text-[#78716C] mt-0.5">Berlaku selamanya</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard/upgrade')}
+              className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-sm active:scale-95 transition-transform"
+            >
+              Upgrade Paket
+            </button>
+          </div>
+        </section>
+
         {/* Section: Pembayaran */}
         <section>
           <h2 className="text-ios-caption uppercase tracking-widest text-[#A8A29E] mb-1.5 px-3">Pembayaran</h2>
