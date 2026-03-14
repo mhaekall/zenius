@@ -16,25 +16,12 @@ node scripts/extract-meta.js
 echo "🛠️  Building project with pnpm..."
 pnpm build
 
-# 4. Upload to Cloudflare Pages (Direct Upload)
-# Kita butuh wrangler-action style upload atau direct API zip upload.
-# Karena Wrangler tidak bisa di Termux, kita gunakan curl untuk upload zip.
+# 4. Patch workerd (Android arm64 bypass)
+echo "🔧 Patching workerd for Termux..."
+sed -i 's/function generateBinPath() {/function generateBinPath() { return __filename;/g' node_modules/.pnpm/workerd@*/node_modules/workerd/lib/main.js 2>/dev/null || true
 
-echo "📂 Zipping dist folder..."
-cd dist && zip -r ../dist.zip . && cd ..
-
-echo "📤 Uploading to Cloudflare Pages..."
-# Cloudflare Pages Direct Upload via API requires a different endpoint
-# and a specific structure. 
-
-# Alternative: Using Wrangler is better, but since it's unsupported,
-# we'll use a custom curl command to create a deployment.
-# Note: This is an advanced 'hacker' move.
-
-curl -X POST "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJECT_NAME/deployments" \
-     -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-     -H "Content-Type: multipart/form-data" \
-     -F "file=@dist.zip"
+# 5. Upload to Cloudflare Pages via Wrangler
+echo "📤 Deploying to Cloudflare Pages..."
+npx wrangler pages deploy dist --project-name $PROJECT_NAME --branch main
 
 echo -e "\n✅ Deployment Complete! Check: https://$PROJECT_NAME.pages.dev"
-rm dist.zip
