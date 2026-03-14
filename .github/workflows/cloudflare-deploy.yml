@@ -42,4 +42,4 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: openmenu
           directory: dist
-          branch: main
+          branch: local-workspace
