@@ -22,6 +22,6 @@ sed -i 's/function generateBinPath() {/function generateBinPath() { return __fil
 
 # 5. Upload to Cloudflare Pages via Wrangler
 echo "📤 Deploying to Cloudflare Pages..."
-npx wrangler pages deploy dist --project-name $PROJECT_NAME --branch main
+npx wrangler pages deploy dist --project-name $PROJECT_NAME --branch local-workspace
 
 echo -e "\n✅ Deployment Complete! Check: https://$PROJECT_NAME.pages.dev"
