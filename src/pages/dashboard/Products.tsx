@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Pencil, Trash2, Package, ToggleLeft, ToggleRight, Search, GripVertical, Check, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -27,6 +27,7 @@ type ProductFormData = z.infer<typeof productSchema>;
 
 export default function Products() {
   const { store } = useAuthStore();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -358,16 +359,49 @@ export default function Products() {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4 px-1">
+      <div className="flex items-center justify-between mb-2 px-1">
         <div>
           <h1 className="text-ios-title2 text-[#1C1917]">Produk</h1>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="px-3 py-1.5 bg-[#F5F4F0] rounded-full border border-black/[0.06] text-xs font-bold text-[#78716C] shadow-ios-sm">
-            <span className={totalCount >= 15 ? 'text-red-500' : 'text-[#1C1917]'}>{totalCount}</span> / 15 Limit
-          </div>
-        </div>
       </div>
+
+      {/* Product Limit Progress Bar */}
+      {totalCount > 0 && (
+        <div className="mb-4 px-1">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs text-[#A8A29E] font-medium">
+              {totalCount} dari 15 produk
+            </span>
+            <span className={`text-xs font-bold ${
+              totalCount >= 15 ? 'text-red-500' :
+              totalCount >= 12 ? 'text-amber-500' :
+              'text-[#A8A29E]'
+            }`}>
+              {totalCount >= 15 ? 'Limit tercapai' :
+               totalCount >= 12 ? `Sisa ${15 - totalCount} slot` :
+               'Paket Gratis'}
+            </span>
+          </div>
+          <div className="w-full h-1.5 bg-[#EEECEA] rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                totalCount >= 15 ? 'bg-red-500' :
+                totalCount >= 12 ? 'bg-amber-500' :
+                'bg-[#1C1917]'
+              }`}
+              style={{ width: `${Math.min((totalCount / 15) * 100, 100)}%` }}
+            />
+          </div>
+          {totalCount >= 15 && (
+            <button
+              onClick={() => navigate('/dashboard/upgrade')}
+              className="mt-2 text-xs font-bold text-amber-600 ios-press flex items-center gap-1"
+            >
+              Upgrade untuk produk unlimited →
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Merged Search & Filter Block */}
       <div className="bg-[#F5F4F0] rounded-[18px] p-2 mb-6 shadow-ios-sm border border-black/[0.06]">
@@ -398,6 +432,16 @@ export default function Products() {
           ))}
         </div>
       </div>
+
+      {/* Drag & Drop Hint */}
+      {filteredProducts.length > 1 && !searchQuery && selectedCategory === 'Semua' && !loading && (
+        <div className="flex items-center gap-2 px-1 mb-3">
+          <GripVertical className="w-3.5 h-3.5 text-[#A8A29E]" />
+          <span className="text-xs text-[#A8A29E]">
+            Tekan dan geser untuk mengubah urutan produk
+          </span>
+        </div>
+      )}
 
       {/* Bulk Action Bar (Animated) */}
       <AnimatePresence>
@@ -578,7 +622,7 @@ export default function Products() {
 
                             <div 
                               {...provided.dragHandleProps}
-                              className="w-8 h-10 flex items-center justify-center text-[#A8A29E] active:text-[#1C1917] active:bg-[#EEECEA] rounded-lg transition-colors"
+                              className="w-8 h-10 flex items-center justify-center text-[#78716C] hover:text-[#1C1917] active:text-[#1C1917] active:bg-[#EEECEA] rounded-lg transition-colors cursor-grab active:cursor-grabbing"
                             >
                               <GripVertical className="w-5 h-5" />
                             </div>
@@ -649,7 +693,8 @@ export default function Products() {
       <AnimatePresence>
         {modalOpen && (
           <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editProduct ? 'Edit Produk' : 'Tambah Produk Baru'}>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <div style={{ WebkitOverflowScrolling: 'touch' }}>
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pb-6">
               {/* Media Upload Area */}
               <div>
                 <label className="text-ios-caption uppercase tracking-widest text-[#A8A29E] mb-2 block px-1">Foto Produk</label>
@@ -747,6 +792,7 @@ export default function Products() {
                 </Button>
               </div>
             </form>
+            </div>
           </Modal>
         )}
       </AnimatePresence>

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useDeferredValue } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -90,7 +90,7 @@ export default function Settings() {
     handleSubmit,
     watch,
     setValue,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
@@ -109,6 +109,16 @@ export default function Settings() {
   });
 
   const isActive = watch('is_active');
+  
+  // Deferred values for live preview (prevents lag on low-end devices)
+  const watchedName = watch('name');
+  const watchedDesc = watch('description');
+  const watchedColor = watch('theme_color');
+  
+  const deferredName = useDeferredValue(watchedName);
+  const deferredDesc = useDeferredValue(watchedDesc);
+  const deferredColor = useDeferredValue(watchedColor);
+  
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
@@ -135,6 +145,18 @@ export default function Settings() {
       toast.error(`Gagal menghapus: ${err.message}`, { id: toastId });
     }
   };
+
+  // Navigation guard for unsaved changes (beforeunload only - 80% coverage)
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
 
   const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -267,7 +289,7 @@ export default function Settings() {
               style={{ background: '#F2F2F7' }}
             >
               {/* Miniature Catalog Preview */}
-              <div className="h-8 w-full" style={{ background: watch('theme_color') }} />
+              <div className="h-8 w-full" style={{ background: deferredColor }} />
               <div className="p-2 space-y-2">
                 <div className="w-10 h-10 bg-white rounded-lg mx-auto -mt-6 border border-black/[0.02] overflow-hidden">
                   {logoPreview ? <img src={logoPreview} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-[#EEECEA]" />}
@@ -280,11 +302,11 @@ export default function Settings() {
               </div>
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-bold text-[#1C1917] truncate">{watch('name') || 'Nama Toko'}</h3>
-              <p className="text-[11px] text-[#78716C] line-clamp-2 mt-1">{watch('description') || 'Belum ada deskripsi...'}</p>
+              <h3 className="text-sm font-bold text-[#1C1917] truncate">{deferredName || 'Nama Toko'}</h3>
+              <p className="text-[11px] text-[#78716C] line-clamp-2 mt-1">{deferredDesc || 'Belum ada deskripsi...'}</p>
               <div 
                 className="mt-3 inline-flex px-3 py-1 rounded-full text-[10px] font-bold text-white shadow-sm"
-                style={{ background: watch('theme_color') }}
+                style={{ background: deferredColor }}
               >
                 Lihat Katalog
               </div>
@@ -292,11 +314,15 @@ export default function Settings() {
           </div>
         </section>
 
-        {/* Section: Tampilan Toko */}
-        <section>
-          <h2 className="text-ios-caption uppercase tracking-widest text-[#A8A29E] mb-1.5 px-3">Tampilan Toko</h2>
-          <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] shadow-ios-sm overflow-hidden">
-            
+        {/* Section 1: Tampilan Toko (default open) */}
+        <details open className="group">
+          <summary className="flex items-center justify-between py-3 px-4 cursor-pointer list-none 
+            bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] shadow-ios-sm
+            active:bg-[#EEECEA] transition-colors select-none">
+            <span className="text-sm font-bold text-[#1C1917]">Tampilan Toko</span>
+            <ChevronRight className="w-4 h-4 text-[#A8A29E] transition-transform group-open:rotate-90" />
+          </summary>
+          <div className="mt-2 bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] shadow-ios-sm overflow-hidden">
             {/* Logo Row */}
             <div 
               onClick={() => logoRef.current?.click()}
@@ -326,7 +352,8 @@ export default function Settings() {
               <div className="flex items-center gap-2">
                 <input 
                   type="color" 
-                  {...register('theme_color')} 
+                  {...register('theme_color')}
+                  onInput={(e) => setValue('theme_color', e.currentTarget.value)}
                   className="w-8 h-8 rounded-[8px] cursor-pointer border-0 p-0 bg-transparent" 
                 />
               </div>
@@ -362,12 +389,17 @@ export default function Settings() {
             </div>
 
           </div>
-        </section>
+        </details>
 
-        {/* Section: Informasi Dasar */}
-        <section>
-          <h2 className="text-ios-caption uppercase tracking-widest text-[#A8A29E] mb-1.5 px-3">Informasi Dasar</h2>
-          <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] shadow-ios-sm overflow-hidden px-4 py-2 space-y-3 pb-4">
+        {/* Section 2: Informasi & Kontak */}
+        <details className="group">
+          <summary className="flex items-center justify-between py-3 px-4 cursor-pointer list-none 
+            bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] shadow-ios-sm
+            active:bg-[#EEECEA] transition-colors select-none mt-3">
+            <span className="text-sm font-bold text-[#1C1917]">Informasi & Kontak</span>
+            <ChevronRight className="w-4 h-4 text-[#A8A29E] transition-transform group-open:rotate-90" />
+          </summary>
+          <div className="mt-2 bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] shadow-ios-sm overflow-hidden px-4 py-2 space-y-3 pb-4">
             <Input
               label="Nama Toko"
               {...register('name')}
@@ -414,11 +446,18 @@ export default function Settings() {
               placeholder="Ceritakan tentang tokomu kepada pelanggan..."
             />
             </div>
-            </section>
+            </details>
 
-            {/* Section: Sosial Media */}
-            <section>
-            <h2 className="text-ios-caption uppercase tracking-widest text-[#A8A29E] mb-1.5 px-3">Sosial Media</h2>
+            {/* Section 3: Sosial & Lainnya */}
+            <details className="group">
+              <summary className="flex items-center justify-between py-3 px-4 cursor-pointer list-none 
+                bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] shadow-ios-sm
+                active:bg-[#EEECEA] transition-colors select-none mt-3">
+                <span className="text-sm font-bold text-[#1C1917]">Sosial & Lainnya</span>
+                <ChevronRight className="w-4 h-4 text-[#A8A29E] transition-transform group-open:rotate-90" />
+              </summary>
+              <div className="mt-2 space-y-3 px-4 pb-4">
+                <h2 className="text-ios-caption uppercase tracking-widest text-[#A8A29E] mb-1.5">Sosial Media</h2>
             <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] shadow-ios-sm overflow-hidden px-4 py-2 space-y-3 pb-4">
             <Input
               label="Instagram"
@@ -435,11 +474,9 @@ export default function Settings() {
               className="bg-[#EEECEA]"
             />
             </div>
-            </section>
 
-            {/* Section: Pengumuman Toko */}
-            <section>
-            <h2 className="text-ios-caption uppercase tracking-widest text-[#A8A29E] mb-1.5 px-3">Banner Pengumuman</h2>
+            {/* Banner Pengumuman */}
+            <h2 className="text-ios-caption uppercase tracking-widest text-[#A8A29E] mb-1.5">Banner Pengumuman</h2>
             <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] shadow-ios-sm overflow-hidden px-4 py-3">
             <Input
               label="Teks Pengumuman"
@@ -451,9 +488,8 @@ export default function Settings() {
             />
             <p className="text-[10px] text-[#A8A29E] mt-2 px-1">Muncul di bagian paling atas katalog publik.</p>
             </div>
-            </section>
 
-            {/* Section: Paket Langganan */}
+        {/* Section: Paket Langganan */}
         <section>
           <h2 className="text-ios-caption uppercase tracking-widest text-[#A8A29E] mb-1.5 px-3">Paket Langganan</h2>
           <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] shadow-ios-sm overflow-hidden px-4 py-4 flex items-center justify-between">
@@ -470,6 +506,9 @@ export default function Settings() {
             </button>
           </div>
         </section>
+
+            </div>
+            </details>
 
         {/* Section: Pembayaran */}
         <section>
@@ -496,6 +535,30 @@ export default function Settings() {
         <Button type="submit" loading={isSubmitting} className="w-full py-3.5 shadow-ios-sm mt-4">
           <Save className="w-4 h-4" /> Simpan Perubahan
         </Button>
+
+        {/* Sticky unsaved changes bar */}
+        <AnimatePresence>
+          {isDirty && (
+            <motion.div
+              initial={{ y: 80, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 80, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+              className="fixed bottom-20 left-4 right-4 z-40 max-w-lg mx-auto"
+            >
+              <div className="bg-amber-500 rounded-[20px] px-5 py-3 flex items-center justify-between shadow-ios-lg">
+                <span className="text-sm font-bold text-white">Ada perubahan belum tersimpan</span>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="bg-white text-amber-600 text-sm font-black px-4 py-1.5 rounded-full ios-press active:scale-95 transition-transform disabled:opacity-60"
+                >
+                  {isSubmitting ? 'Menyimpan...' : 'Simpan'}
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Section: Akun */}
         <section className="mt-8">

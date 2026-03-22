@@ -138,6 +138,12 @@ export default function Overview() {
   const [productsWithoutPhoto, setProductsWithoutPhoto] = useState(0);
   const [totalProducts, setTotalProducts] = useState(0);
 
+  // Expand/collapse state for detail sections
+  const [showDetail, setShowDetail] = useState(false);
+  
+  // UTM tab state for catalog link card
+  const [utmTab, setUtmTab] = useState<'direct'|'ig'|'wa'|'tiktok'>('direct');
+
   useEffect(() => {
     if (!store) {
       setLoading(false);
@@ -177,8 +183,16 @@ export default function Overview() {
 
   const catalogUrl = store ? `${window.location.origin}/c/${store.slug}` : '';
 
+  // UTM URL builder based on selected tab
+  const utmUrls = {
+    direct: catalogUrl,
+    ig: catalogUrl + '?utm_source=instagram',
+    wa: catalogUrl + '?utm_source=wa_group',
+    tiktok: catalogUrl + '?utm_source=tiktok',
+  };
+
   const copyLink = () => {
-    navigator.clipboard.writeText(catalogUrl);
+    navigator.clipboard.writeText(utmUrls[utmTab]);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -362,49 +376,7 @@ export default function Overview() {
       )}
 
       {/* 1.7 QUICK ACTIONS — Horizontal scrolling row */}
-      <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 mb-5 px-1">
-        <button 
-          onClick={copyLink}
-          className="flex flex-col items-center gap-2 flex-shrink-0"
-        >
-          <div className="w-14 h-14 rounded-[18px] bg-white border border-black/[0.04] shadow-ios-sm flex items-center justify-center text-[#1C1917] active:bg-[#EEECEA] transition-colors">
-            {copied ? <Check className="w-6 h-6 text-emerald-500" /> : <Copy className="w-6 h-6" />}
-          </div>
-          <span className="text-[10px] font-bold text-[#78716C] uppercase tracking-tighter">Salin Link</span>
-        </button>
-
-        <Link 
-          to="/dashboard/products?add=true"
-          className="flex flex-col items-center gap-2 flex-shrink-0"
-        >
-          <div className="w-14 h-14 rounded-[18px] bg-white border border-black/[0.04] shadow-ios-sm flex items-center justify-center text-[#1C1917] active:bg-[#EEECEA] transition-colors">
-            <Plus className="w-6 h-6" />
-          </div>
-          <span className="text-[10px] font-bold text-[#78716C] uppercase tracking-tighter">+ Produk</span>
-        </Link>
-
-        <Link 
-          to="/dashboard/qrcode"
-          className="flex flex-col items-center gap-2 flex-shrink-0"
-        >
-          <div className="w-14 h-14 rounded-[18px] bg-white border border-black/[0.04] shadow-ios-sm flex items-center justify-center text-[#1C1917] active:bg-[#EEECEA] transition-colors">
-            <QrCode className="w-6 h-6" />
-          </div>
-          <span className="text-[10px] font-bold text-[#78716C] uppercase tracking-tighter">QR Code</span>
-        </Link>
-
-        <a 
-          href={`https://wa.me/?text=Halo! Cek katalog kami di: ${catalogUrl}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex flex-col items-center gap-2 flex-shrink-0"
-        >
-          <div className="w-14 h-14 rounded-[18px] bg-[#25D366] shadow-ios-sm flex items-center justify-center text-white active:opacity-80 transition-opacity">
-            <MessageCircle className="w-6 h-6" />
-          </div>
-          <span className="text-[10px] font-bold text-[#78716C] uppercase tracking-tighter">Share WA</span>
-        </a>
-      </div>
+      {/* REMOVED: Duplicates bottom nav */}
 
       {/* 2. PERIOD SELECTOR — iOS Segmented Control */}
       <div className="bg-[#EEECEA] p-1 rounded-[14px] flex items-center mb-5">
@@ -492,31 +464,56 @@ export default function Overview() {
         );
       })()}
 
-      {/* 4. METRICS ROW — 2x2 grid for mobile clarity */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
-        {[
-          { label: 'Pengunjung', value: totalViews, icon: Eye },
-          { label: 'Pesanan WA', value: totalWa, icon: MessageCircle },
-          { label: 'Keranjang', value: totalCart, icon: ShoppingCart },
-          { label: 'Scan QR', value: totalQr, icon: QrCode },
-        ].map((stat) => (
-          <div
-            key={stat.label}
-            className="bg-[#F5F4F0] rounded-[18px] p-3 border border-black/[0.06]"
-          >
-            <stat.icon className="w-4 h-4 text-[#A8A29E] mb-2" />
-            <p className="text-ios-title2 font-bold text-[#1C1917] leading-none">
-              {loading ? '—' : stat.value}
-            </p>
-            <p className="text-[10px] text-[#A8A29E] mt-1 font-medium leading-tight">
-              {stat.label}
-            </p>
-          </div>
-        ))}
+      {/* 4. PRIMARY METRICS — 2 pill chips above fold */}
+      <div className="flex gap-2 mb-3">
+        <div className="flex items-center gap-2 bg-[#F5F4F0] rounded-full px-4 py-2 border border-black/[0.06]">
+          <Eye className="w-3.5 h-3.5 text-[#A8A29E]" />
+          <span className="text-sm font-bold text-[#1C1917]">{totalViews}</span>
+          <span className="text-xs text-[#A8A29E]">pengunjung</span>
+        </div>
+        <div className="flex items-center gap-2 bg-[#F5F4F0] rounded-full px-4 py-2 border border-black/[0.06]">
+          <MessageCircle className="w-3.5 h-3.5 text-[#A8A29E]" />
+          <span className="text-sm font-bold text-[#1C1917]">{totalWa}</span>
+          <span className="text-xs text-[#A8A29E]">klik WA</span>
+        </div>
       </div>
 
-      {/* 4.5 REVENUE ESTIMATION — Apple Card style */}
-      {totalWa > 0 && (
+      {/* Toggle button for detail sections */}
+      <button
+        onClick={() => setShowDetail(v => !v)}
+        className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 mb-4 ios-press"
+      >
+        <TrendingUp className="w-3.5 h-3.5" />
+        {showDetail ? 'Sembunyikan detail' : 'Lihat analitik detail'}
+      </button>
+
+      {/* 4.5 DETAIL METRICS GRID — Collapsible */}
+      {showDetail && (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
+            {[
+              { label: 'Pengunjung', value: totalViews, icon: Eye },
+              { label: 'Pesanan WA', value: totalWa, icon: MessageCircle },
+              { label: 'Keranjang', value: totalCart, icon: ShoppingCart },
+              { label: 'Scan QR', value: totalQr, icon: QrCode },
+            ].map((stat) => (
+              <div
+                key={stat.label}
+                className="bg-[#F5F4F0] rounded-[18px] p-3 border border-black/[0.06]"
+              >
+                <stat.icon className="w-4 h-4 text-[#A8A29E] mb-2" />
+                <p className="text-ios-title2 font-bold text-[#1C1917] leading-none">
+                  {loading ? '—' : stat.value}
+                </p>
+                <p className="text-[10px] text-[#A8A29E] mt-1 font-medium leading-tight">
+                  {stat.label}
+                </p>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+      {showDetail && totalWa > 0 && (
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -537,8 +534,8 @@ export default function Overview() {
         </motion.div>
       )}
 
-      {/* 5. CONVERSION RATE INDICATOR — Apple Health ring style */}
-      {totalViews > 0 && (
+      {/* 5. CONVERSION RATE INDICATOR — Collapsible */}
+      {showDetail && totalViews > 0 && (
         <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] p-4 mb-5 flex items-center gap-4">
           <div className="relative w-14 h-14 flex-shrink-0">
             <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
@@ -579,7 +576,8 @@ export default function Overview() {
         </div>
       )}
 
-      {/* 6. CHART — 7 days always, regardless of period selector */}
+      {/* 6. CHART — 7 days Collapsible */}
+      {showDetail && (
       <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] p-4 mb-5">
         <p className="text-[10px] font-semibold text-[#A8A29E] uppercase tracking-widest mb-4">
           Tren 7 Hari Terakhir
@@ -631,9 +629,10 @@ export default function Overview() {
           Lihat Analitik Lengkap
         </Link>
       </div>
+      )}
 
-      {/* 6.5 TRAFFIC SOURCE — Compact list */}
-      {totalViews > 0 && (
+      {/* 6.5 TRAFFIC SOURCE — Collapsible */}
+      {showDetail && totalViews > 0 && (
         <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] p-4 mb-5">
           <p className="text-[10px] font-semibold text-[#A8A29E] uppercase tracking-widest mb-4">
             Sumber Pengunjung
@@ -660,14 +659,37 @@ export default function Overview() {
         </div>
       )}
 
-      {/* 7. CATALOG LINK — compact, action-focused */}
+      {/* 7. CATALOG LINK — with UTM tabs */}
       <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] p-4 mb-5">
         <p className="text-[10px] font-semibold text-[#A8A29E] uppercase tracking-widest mb-3">
           Link Katalog
         </p>
+        
+        {/* UTM Tabs */}
+        <div className="flex gap-1.5 mb-3">
+          {([
+            { key: 'direct', label: 'Langsung' },
+            { key: 'ig', label: 'Instagram' },
+            { key: 'wa', label: 'WA Group' },
+            { key: 'tiktok', label: 'TikTok' },
+          ] as const).map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setUtmTab(tab.key)}
+              className={`px-3 py-1.5 rounded-[10px] text-[10px] font-semibold transition-colors ${
+                utmTab === tab.key
+                  ? 'bg-[#1C1917] text-white'
+                  : 'bg-white text-[#78716C] border border-black/[0.06]'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        
         <div className="flex items-center gap-2 bg-[#EEECEA] rounded-[14px] px-3 py-2.5">
           <span className="text-xs text-[#78716C] flex-1 truncate font-medium">
-            {catalogUrl}
+            {utmUrls[utmTab]}
           </span>
           <button
             onClick={copyLink}
@@ -681,7 +703,7 @@ export default function Overview() {
         </div>
         <div className="flex gap-4 mt-3">
           <a
-            href={catalogUrl}
+            href={utmUrls[utmTab]}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-xs text-[#1C1917] font-semibold ios-press"
@@ -693,52 +715,6 @@ export default function Overview() {
             className="flex items-center gap-1.5 text-xs text-[#78716C] font-medium ios-press"
           >
             <QrCode className="w-3.5 h-3.5" /> QR Code
-          </Link>
-        </div>
-      </div>
-
-      
-      {/* 7.5. LINK GENERATOR (UTM Tracking) */}
-      <div className="bg-[#F5F4F0] rounded-[18px] border border-black/[0.06] p-4 mb-5">
-        <p className="text-[10px] font-semibold text-[#A8A29E] uppercase tracking-widest mb-3">
-          Atribusi & Share (Link Generator)
-        </p>
-        <p className="text-xs text-[#78716C] mb-4">
-          Buat link khusus untuk melacak dari mana pengunjung dan pesanan kamu berasal.
-        </p>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(catalogUrl + '?utm_source=instagram');
-              toast.success('Link Instagram berhasil disalin!');
-            }}
-            className="flex items-center justify-center gap-2 bg-white border border-[#E8E6E1] p-2.5 rounded-[12px] text-xs font-semibold text-[#1C1917] shadow-sm ios-press"
-          >
-            📸 Instagram
-          </button>
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(catalogUrl + '?utm_source=wa_group');
-              toast.success('Link WhatsApp berhasil disalin!');
-            }}
-            className="flex items-center justify-center gap-2 bg-white border border-[#E8E6E1] p-2.5 rounded-[12px] text-xs font-semibold text-[#1C1917] shadow-sm ios-press"
-          >
-            💬 WA Group
-          </button>
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(catalogUrl + '?utm_source=tiktok');
-              toast.success('Link TikTok berhasil disalin!');
-            }}
-            className="flex items-center justify-center gap-2 bg-white border border-[#E8E6E1] p-2.5 rounded-[12px] text-xs font-semibold text-[#1C1917] shadow-sm ios-press"
-          >
-            🎵 TikTok
-          </button>
-          <Link
-            to="/dashboard/qrcode"
-            className="flex items-center justify-center gap-2 bg-white border border-[#E8E6E1] p-2.5 rounded-[12px] text-xs font-semibold text-[#1C1917] shadow-sm ios-press"
-          >
-            <QrCode className="w-4 h-4" /> Cetak QR Offline
           </Link>
         </div>
       </div>

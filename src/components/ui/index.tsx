@@ -380,7 +380,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
             </div>
           )}
 
-          <div className="flex-1 overflow-y-auto p-6 pb-10 sm:pb-6 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-6 pb-10 sm:pb-6 custom-scrollbar" style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
             {children}
           </div>
         </motion.div>

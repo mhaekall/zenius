@@ -1,10 +1,12 @@
 import { useRef, useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Download, ExternalLink, Share2, Palette, Image as ImageIcon, FileText, ChevronRight } from 'lucide-react';
+import { Download, ExternalLink, Share2, Palette, Image as ImageIcon, FileText } from 'lucide-react';
 import { toBlob } from 'html-to-image';
+import jsPDF from 'jspdf';
+import QRCode from 'qrcode';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/authStore';
-import { Button, Input } from '../../components/ui';
+import { Button } from '../../components/ui';
 import { cn } from '../../lib/utils';
 
 // Robust clipboard copy function that works in all contexts
@@ -44,13 +46,16 @@ const copyToClipboard = async (text: string): Promise<boolean> => {
 export default function QRCodePage() {
   const { store } = useAuthStore();
   const qrRef = useRef<HTMLDivElement>(null);
-  const pdfRef = useRef<HTMLDivElement>(null);
   
   // Customization States
   const [qrColor, setQrColor] = useState('#1C1917');
   const [bgColor, setBgColor] = useState('#FAFAF8');
   const [showLogo, setShowLogo] = useState(true);
   const [qrSize, setQrSize] = useState<'S' | 'M' | 'L'>('M');
+
+  // Download loading states
+  const [downloadingPng, setDownloadingPng] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const sizePixels = {
     S: 512,
@@ -70,10 +75,11 @@ export default function QRCodePage() {
   const catalogUrl = `${window.location.origin}/c/${store.slug}`;
 
   const downloadQR = async () => {
-    if (!qrRef.current) return;
+    if (!qrRef.current || downloadingPng) return;
+    setDownloadingPng(true);
     const toastId = toast.loading('Menyiapkan gambar...');
     try {
-      await new Promise(resolve => setTimeout(resolve, 300)); 
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       const blob = await toBlob(qrRef.current, { 
         pixelRatio: qrSize === 'S' ? 1.5 : qrSize === 'M' ? 3 : 5,
@@ -95,42 +101,86 @@ export default function QRCodePage() {
     } catch (error) {
       toast.error('Gagal mengunduh gambar', { id: toastId });
       console.error(error);
+    } finally {
+      setDownloadingPng(false);
     }
   };
 
   const downloadPDF = async () => {
-    if (!pdfRef.current) return;
-    const toastId = toast.loading('Membuat desain poster PDF...');
-    
+    if (downloadingPdf) return;
+    setDownloadingPdf(true);
+    const toastId = toast.loading('Membuat poster PDF...');
     try {
-      const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
-        import('jspdf'),
-        import('html2canvas'),
-      ]);
+      // A4 dimensions in points (72dpi): 595 x 842
+      const pdf = new jsPDF('portrait', 'pt', 'a4');
+      const W = 595;
+      const H = 842;
 
-      pdfRef.current.style.display = 'flex';
-      
-      const canvas = await html2canvas(pdfRef.current, {
-        scale: 3,
-        useCORS: true,
+      // Background
+      pdf.setFillColor(250, 250, 248); // #FAFAF8
+      pdf.rect(0, 0, W, H, 'F');
+
+      // Header band using theme color
+      const hex = store.theme_color || '#F59E0B';
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      pdf.setFillColor(r, g, b);
+      pdf.rect(0, 0, W, 180, 'F');
+
+      // Store name text
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(32);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(store.name, W / 2, 100, { align: 'center' });
+
+      // Subtitle
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Scan untuk melihat menu', W / 2, 130, { align: 'center' });
+
+      // Generate QR code as data URL using qrcode library
+      const qrDataUrl = await QRCode.toDataURL(catalogUrl, {
+        width: 400,
+        margin: 2,
+        color: {
+          dark: qrColor,
+          light: bgColor,
+        },
+        errorCorrectionLevel: 'H',
       });
-      
-      pdfRef.current.style.display = 'none';
 
-      const pdf = new jsPDF('portrait', 'mm', 'a4');
-      const imgData = canvas.toDataURL('image/jpeg', 1.0);
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+      // Draw QR code centered
+      const qrCodeSize = 260;
+      const qrX = (W - qrCodeSize) / 2;
+      const qrY = 220;
+      pdf.addImage(qrDataUrl, 'PNG', qrX, qrY, qrCodeSize, qrCodeSize);
+
+      // QR border box
+      pdf.setDrawColor(228, 228, 225);
+      pdf.setLineWidth(1);
+      pdf.roundedRect(qrX - 16, qrY - 16, qrCodeSize + 32, qrCodeSize + 32, 12, 12);
+
+      // URL text below QR
+      pdf.setTextColor(28, 25, 23); // #1C1917
+      pdf.setFontSize(13);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`openmenu.app/${store.slug}`, W / 2, qrY + qrCodeSize + 40, { align: 'center' });
+
+      // Footer
+      pdf.setTextColor(168, 162, 158); // #A8A29E
+      pdf.setFontSize(11);
+      pdf.text('Pesan dari meja Anda · Tanpa download aplikasi', W / 2, H - 40, { align: 'center' });
+      pdf.setFontSize(10);
+      pdf.text('Powered by OpenMenu', W / 2, H - 22, { align: 'center' });
+
       pdf.save(`Poster-QR-${store.name}.pdf`);
-      
       toast.success('Poster PDF berhasil dibuat!', { id: toastId });
     } catch (error) {
-      toast.error('Gagal membuat PDF', { id: toastId });
-      console.error(error);
-      if (pdfRef.current) pdfRef.current.style.display = 'none';
+      console.error('PDF generation error:', error);
+      toast.error('Gagal membuat PDF: ' + (error instanceof Error ? error.message : 'Unknown error'), { id: toastId });
+    } finally {
+      setDownloadingPdf(false);
     }
   };
 
@@ -220,13 +270,42 @@ export default function QRCodePage() {
                 </button>
               ))}
             </div>
-            <Button onClick={downloadQR} className="w-full py-3.5 text-base shadow-ios-sm ios-press">
-              <Download className="w-5 h-5 mr-2" /> Download PNG ({sizePixels[qrSize]}px)
+            <Button
+              onClick={downloadQR}
+              disabled={downloadingPng}
+              className="w-full py-3.5 text-base shadow-ios-sm ios-press"
+            >
+              {downloadingPng ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                  Menyiapkan...
+                </>
+              ) : (
+                <>
+                  <Download className="w-5 h-5 mr-2" />
+                  Download PNG ({sizePixels[qrSize]}px)
+                </>
+              )}
             </Button>
           </div>
           
-          <Button variant="secondary" onClick={downloadPDF} className="w-full py-3.5 text-base shadow-ios-sm ios-press bg-[#EEECEA] text-[#1C1917]">
-            <FileText className="w-5 h-5 mr-2" /> Buat Poster PDF
+          <Button
+            variant="secondary"
+            onClick={downloadPDF}
+            disabled={downloadingPdf}
+            className="w-full py-3.5 text-base shadow-ios-sm ios-press bg-[#EEECEA] text-[#1C1917]"
+          >
+            {downloadingPdf ? (
+              <>
+                <div className="w-4 h-4 border-2 border-[#1C1917]/20 border-t-[#1C1917] rounded-full animate-spin mr-2" />
+                Membuat poster...
+              </>
+            ) : (
+              <>
+                <FileText className="w-5 h-5 mr-2" />
+                Buat Poster PDF
+              </>
+            )}
           </Button>
 
           <div className="flex gap-3">
@@ -317,72 +396,6 @@ export default function QRCodePage() {
             <li>Pastikan kontras warna cukup tinggi agar mudah di-scan.</li>
             <li>Gunakan PDF untuk dicetak dan diletakkan di meja kasir.</li>
           </ul>
-        </div>
-      </div>
-
-      {/* Hidden Poster Template for PDF Generation */}
-      <div className="fixed top-[-9999px] left-[-9999px] z-[-1] pointer-events-none opacity-0">
-        <div 
-          ref={pdfRef}
-          className="w-[800px] h-[1130px] flex flex-col items-center bg-[#FAFAF8] relative overflow-hidden"
-          style={{ display: 'none' }}
-        >
-          {/* Top Decoration */}
-          <div 
-            className="absolute top-0 left-0 w-full h-64"
-            style={{ backgroundColor: store.theme_color || '#F59E0B' }}
-          >
-            <svg className="absolute bottom-0 left-0 w-full h-24 text-[#FAFAF8]" viewBox="0 0 1440 320" preserveAspectRatio="none">
-              <path fill="currentColor" fillOpacity="1" d="M0,96L48,112C96,128,192,160,288,186.7C384,213,480,235,576,213.3C672,192,768,128,864,128C960,128,1056,192,1152,213.3C1248,235,1344,213,1392,202.7L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-            </svg>
-          </div>
-
-          {/* Content */}
-          <div className="z-10 flex flex-col items-center mt-20 w-full px-16">
-            {store.logo_url && (
-              <div className="w-32 h-32 rounded-full overflow-hidden bg-white p-2 shadow-xl mb-6 border-4" style={{ borderColor: store.theme_color || '#F59E0B' }}>
-                <img src={store.logo_url} alt="Logo" className="w-full h-full object-cover rounded-full" crossOrigin="anonymous" />
-              </div>
-            )}
-            
-            <h1 className="text-6xl font-black text-white mb-2 text-center" style={{ textShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
-              {store.name}
-            </h1>
-          </div>
-
-          <div className="z-10 mt-24 bg-white p-12 rounded-[3rem] shadow-2xl flex flex-col items-center border border-gray-100">
-            <p className="text-2xl font-bold text-gray-800 mb-8 uppercase tracking-widest">Scan Untuk Melihat Menu</p>
-            
-            <div className="p-4 rounded-3xl" style={{ backgroundColor: bgColor, border: `4px solid ${qrColor}20` }}>
-              <QRCodeSVG
-                value={catalogUrl}
-                size={400}
-                bgColor={bgColor}
-                fgColor={qrColor}
-                level="H"
-                imageSettings={
-                  showLogo && store.logo_url
-                    ? {
-                        src: store.logo_url,
-                        height: 90,
-                        width: 90,
-                        excavate: true,
-                      }
-                    : undefined
-                }
-              />
-            </div>
-
-            <div className="mt-8 flex items-center gap-4 bg-gray-50 px-8 py-4 rounded-full border border-gray-200">
-              <span className="text-xl font-medium text-gray-500">Atau kunjungi:</span>
-              <span className="text-xl font-bold text-gray-900">openmenu.app/{store.slug}</span>
-            </div>
-          </div>
-
-          {/* Bottom Footer */}
-          <div className="absolute bottom-10 text-center w-full">
-            <p className="text-[#A8A29E] text-lg font-medium">Pesan dari meja Anda • Tanpa download aplikasi</p>
-          </div>
         </div>
       </div>
     </>
